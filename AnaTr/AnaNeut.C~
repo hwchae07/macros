@@ -1,0 +1,200 @@
+#include <iostream>
+#include <fstream>
+
+#include "AnaNeut.H"
+
+#include "TTree.h"
+
+AnaNeut::AnaNeut():
+  AnaModule("Neut"),
+  fNeutParameters(NULL),
+  fCalibNEBULA(NULL),
+  fCalibNeuLAND(NULL),
+  fCalibNeuLANDVETO(NULL){
+  neutNum = 0;
+  neulandNum = 0;
+  nebulaNum = 0;
+  
+  neutID = new Int_t[200];
+  neutQU = new Double_t[200];
+  neutQD = new Double_t[200];
+  neutTU = new Double_t[200];
+  neutTD = new Double_t[200];
+  neutTA = new Double_t[200];
+  neutX = new Double_t[200];
+  neutY = new Double_t[200];
+  neutZ = new Double_t[200];
+  neutNEB = new Bool_t[200];
+  neutVETO = new Bool_t[200];
+
+  tofOffsetNEB = new Double_t[144];
+  tofOffsetNEU = new Double_t[400];
+}
+
+AnaNeut::~AnaNeut(){    
+  DeleteAll();
+  delete neutID;
+  delete neutQU;
+  delete neutQD;
+  delete neutTU;
+  delete neutTD;
+  delete neutTA;
+  delete neutX;
+  delete neutY;
+  delete neutZ;
+  delete neutNEB;
+  delete neutVETO;
+
+  delete tofOffsetNEB;
+  delete tofOffsetNEU;
+}
+
+void AnaNeut::InitParameter(){
+  fNeutParameters = TArtSAMURAIParameters::Instance();
+  fNeutParameters->LoadParameter((char*)"db/NEBULA.xml");
+  fNeutParameters->LoadParameter((char*)"db/NEULAND.xml");
+  fNeutParameters->LoadParameter((char*)"db/NEULANDVETO.xml");
+
+  std::ifstream tof("../../dat/nebula_gamma_offset.dat");
+  Double_t temp;
+  for (Int_t i = 0 ; i < 144 ; i++)
+    tof >> tofOffsetNEB[i] >> temp;
+  tof.close();
+
+  tof.open("../../dat/neuland_gamma_offset.dat");
+  for (Int_t i = 0 ; i < 400 ; i++)
+    tof >> tofOffsetNEU[i];
+  tof.close();
+
+  parLoaded = true;}
+
+void AnaNeut::InitDetector(){
+  if (!parLoaded) return;
+  fCalibNEBULA = new TArtCalibNEBULA;
+  fCalibNeuLAND = new TArtCalibNeuLAND;
+  fCalibNeuLANDVETO = new TArtCalibNeuLANDVETO;
+  detLoaded = true;}
+
+void AnaNeut::Analysis(){
+  if (!detLoaded) return;
+  anaFlag = true;
+
+  fCalibNEBULA->ClearData();
+  fCalibNeuLAND->ClearData();
+  fCalibNeuLANDVETO->ClearData();
+
+  fCalibNEBULA->ReconstructData();
+  fCalibNeuLAND->ReconstructData();
+  fCalibNeuLANDVETO->ReconstructData();
+
+  neutNum = 0;
+  nebulaNum = 0;
+  neulandNum = 0;
+  for (Int_t i = 0 ; i < 6 ; i++)
+    nebulaMult[i] = 0;
+  for (Int_t i = 0 ; i < 9 ; i++)
+    neulandMult[i] = 0;
+
+  for (Int_t i = 0 ; i < fCalibNEBULA->GetNumNEBULAPla() ; i++){
+    TArtNEBULAPla* pla = fCalibNEBULA->GetNEBULAPla(i);
+    if (pla->GetHit()){
+      neutID[neutNum] = pla->GetID();
+      if (neutID[neutNum] < 121) {
+	nebulaMult[(neutID[neutNum]-1)/30]++;
+	neutVETO[neutNum] = false;}
+      else if (neutID[neutNum] < 145) {
+	nebulaMult[(neutID[neutNum]-121)/12+4]++;
+	neutVETO[neutNum] = true;}
+      else
+	continue;
+      neutQU[neutNum] = pla->GetQUCal();
+      neutQD[neutNum] = pla->GetQDCal();
+      neutTU[neutNum] = pla->GetTUSlw() - tofOffsetNEB[neutID[neutNum]-1];
+      neutTD[neutNum] = pla->GetTDSlw() - tofOffsetNEB[neutID[neutNum]-1];
+      //      neutTA[neutNum] = pla->GetTAveSlw();// - tofOffsetNEB[neutID[neutNum]-1];
+      neutTA[neutNum] = (pla->GetTUSlw() + pla->GetTDSlw())/2. - tofOffsetNEB[neutID[neutNum]-1];
+      if (neutTA[neutNum] < 0) continue;
+      neutX[neutNum] = pla->GetPos(0);
+      neutY[neutNum] = pla->GetPos(1);
+      neutZ[neutNum] = pla->GetPos(2);
+      neutNEB[neutNum] = true;
+      neutNum++;
+      nebulaNum++;
+      }
+  }
+
+  for (Int_t i = 0 ; i < fCalibNeuLAND->GetNumNeuLANDPla() ; i++){
+    TArtNeuLANDPla* pla = fCalibNeuLAND->GetNeuLANDPla(i);
+    if (pla && pla->GetBothFired()){
+      neutID[neutNum] = pla->GetID();
+      neulandMult[int((neutID[neutNum]-1)/50)+1]++;
+      neutQU[neutNum] = pla->GetQCal(0);
+      neutQD[neutNum] = pla->GetQCal(1);
+      //neutTU[neutNum] = pla->GetTCal(0) - tofOffsetNEU[neutID[neutNum]-1];
+      //neutTD[neutNum] = pla->GetTCal(1) - tofOffsetNEU[neutID[neutNum]-1];
+      //neutTA[neutNum] = (pla->GetTCal(0) + pla->GetTCal(1))/2 - tofOffsetNEU[neutID[neutNum]-1];
+      neutTU[neutNum] = pla->GetTCal(0) - tofOffsetNEU[0];
+      neutTD[neutNum] = pla->GetTCal(1) - tofOffsetNEU[0];
+      neutTA[neutNum] = (pla->GetTCal(0) + pla->GetTCal(1))/2 - tofOffsetNEU[0];
+      if (neutTA[neutNum] < 0) continue;
+      neutX[neutNum] = pla->GetX();
+      neutY[neutNum] = pla->GetY();
+      neutZ[neutNum] = pla->GetZ();
+      neutVETO[neutNum] = false;
+      neutNEB[neutNum] = false;
+      neutNum++;
+      neulandNum++;
+    }
+  }
+
+  for (Int_t i = 0 ; i < fCalibNeuLANDVETO->GetNumNeuLANDVETOPla() ; i++){
+    TArtNEBULAPla* pla = fCalibNeuLANDVETO->GetNeuLANDVETOPla(i);
+    if (pla->GetHit()){
+      if (pla->GetID() == 9) continue;
+      neutID[neutNum] = pla->GetID()+400;
+      neulandMult[0]++;
+      neutQU[neutNum] = pla->GetQUCal();
+      neutQD[neutNum] = pla->GetQDCal();
+      neutTU[neutNum] = pla->GetTUSlw();
+      neutTD[neutNum] = pla->GetTDSlw();
+      neutTA[neutNum] = (pla->GetTUSlw()+pla->GetTDSlw())/2.;
+      neutX[neutNum] = pla->GetPos(0);
+      neutY[neutNum] = pla->GetPos(1);
+      neutZ[neutNum] = pla->GetPos(2);
+      neutVETO[neutNum] = true;
+      neutNEB[neutNum] = false;
+      neulandNum++;
+      neutNum++;
+    }
+  }
+
+  if (neutNum < 1)
+    anaFlag = false; 
+}
+
+void AnaNeut::DeleteAll(){
+  if (fCalibNEBULA)    delete fCalibNEBULA;
+  if (fCalibNeuLAND)    delete fCalibNeuLAND;
+  if (fCalibNeuLANDVETO)    delete fCalibNeuLANDVETO;
+}
+
+void AnaNeut::SetTree(){ 
+  AnaModule::SetTree(); 
+  tree->Branch("neutNum",&neutNum,"neutNum/I");
+  tree->Branch("neulandNum",&neulandNum,"neulandNum/I");
+  tree->Branch("nebulaNum",&nebulaNum,"nebulaNum/I");
+  tree->Branch("neulandMult",neulandMult,"neulandMult[9]/I");
+  tree->Branch("nebulaMult",nebulaMult,"nebulaMult[6]/I");
+
+  tree->Branch("neutID",neutID,"neutID[neutNum]/I");
+  tree->Branch("neutQU",neutQU,"neutQU[neutNum]/D");
+  tree->Branch("neutQD",neutQD,"neutQD[neutNum]/D");
+  tree->Branch("neutTU",neutTU,"neutTU[neutNum]/D");
+  tree->Branch("neutTD",neutTD,"neutTD[neutNum]/D");  
+  tree->Branch("neutTA",neutTA,"neutTA[neutNum]/D");
+  tree->Branch("neutX",neutX,"neutX[neutNum]/D");
+  tree->Branch("neutY",neutY,"neutY[neutNum]/D");
+  tree->Branch("neutZ",neutZ,"neutZ[neutNum]/D");
+  tree->Branch("neutNEB",neutNEB,"neutNEB[neutNum]/O");
+  tree->Branch("neutVETO",neutVETO,"neutVETO[neutNum]/O");
+}

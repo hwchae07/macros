@@ -1,0 +1,160 @@
+#include "TFile.h"
+#include "TTree.h"
+#include "TCut.h"
+#include "TString.h"
+#include "TCanvas.h"
+#include <iostream>
+
+void fragPID()
+{
+
+  TH1 *hodq1 = new TH1D("hodq1","hodq;hodQ",1000,200,550);
+  TH1 *hodq2 = new TH1D("hodq2","hodq;hodQ",1000,1.5,3);
+  TH1 *hodq3 = new TH1D("hodq3","hodq;hodQ",1000,0.2,0.35);
+  TH1 *hodqsub1 = new TH1D("hodqsub1","hodq;hodQ",1000,200,550);
+  TH1 *hodqsub2 = new TH1D("hodqsub2","hodq;hodQ",1000,1.5,3);
+  TH1 *hodqsub3 = new TH1D("hodqsub3","hodq;hodQ",1000,0.2,0.35);
+  TH2 *hsum = new TH2D("hsum","hsum;FDC2X;hodT",200,-1200,500,200,71,77);
+  TH2 *hist = new TH2D("hist","hist",200,-1200,500,200,71,77);
+  TH2 *hsumQ1 = new TH2D("hsumQ1","hsumQ;hodT;hodQ",200,71,77,200,200,550);
+  TH2 *hsumQ2 = new TH2D("hsumQ2","hsumQ;hodT;hodQ",200,71,77,200,1.5,3);
+  TH2 *hsumQ3 = new TH2D("hsumQ3","hsumQ;hodT;hodQ",200,71,77,200,0.2,0.35);
+  TH2 *histQ1 = new TH2D("histQ1","histQ",200,71,77,200,200,550);
+  TH2 *histQ2 = new TH2D("histQ2","histQ",200,71,77,200,1.5,3);
+  TH2 *histQ3 = new TH2D("histQ3","histQ",200,71,77,200,0.2,0.35);
+  TCanvas *c2 = new TCanvas("c2","c2",1200,800);
+  c2->Divide(3,2);
+
+  for(Int_t runNum=275 ; runNum<=294 ; runNum++)
+    {
+  
+      TString filename = Form("run%04d.root",runNum);
+
+  
+      TFile *file = new TFile(Form("./root/%s.BeamPla",filename.Data()),"r");
+      TTree *tree = (TTree*)file->Get("BeamPla");
+      tree->BuildIndex("EventNum");
+      tree->AddFriend("BDC",Form("./root/%s.BDC",filename.Data()));
+      tree->GetFriend("BDC")->BuildIndex("EventNum");
+      tree->AddFriend("FDC",Form("./root/%s.FDC",filename.Data()));
+      tree->GetFriend("FDC")->BuildIndex("EventNum");
+      tree->AddFriend("HOD",Form("./root/%s.HOD",filename.Data()));
+      tree->GetFriend("HOD")->BuildIndex("EventNum");
+  
+  
+      //Beam PID//
+      tree->SetAlias("tofc","TOF3_13-3*dT5");
+      tree->SetAlias("elossc","icbEloss-0.1*tofc-40");
+      TCut cut_na = "TMath::Abs(elossc-22.5)<2.5";
+      TCut cut_34na = cut_na&&"TMath::Abs(tofc+388)<3";
+      TCut cut_ne = "abs(elossc-17.8)<2.2";
+      TCut cut_32ne = cut_ne&&"abs(tofc+379)<3";
+      //Beam PID//
+
+      //Target size//
+      Double_t bdcWidth = 120.;
+      Double_t bdc2Tgt = 5366 - 4479 - bdcWidth/2.;
+      Double_t bdc1Tgt = bdc2Tgt + 1000;
+      tree->SetAlias("tgtX",Form("(bdc2X - bdc1X)/1000*%lf + bdc1X",bdc1Tgt));
+      tree->SetAlias("tgtY",Form("(bdc2Y - bdc1Y)/1000*%lf + bdc1Y",bdc1Tgt));
+      TCut cut_reaction = "TMath::Sqrt( TMath::Power(tgtX,2) + TMath::Power(tgtY,2)) < 40";  
+      //Target size//
+
+      //HOD time offset//
+      Double_t par[25] = {0,};
+      par[0] = 75;
+      ifstream hodo_cor("./parameter/Hodo.txt");
+      for(Int_t i=1 ; i<=24;i++)
+	{
+	  hodo_cor>>par[i];
+	  par[i] = par[i] - par[0]; 
+	  //par[i] = -1 * par[i];
+	  //cout<<par[i]<<endl;                                                     
+	}
+
+      TString hodoCor = "hodTA";
+      for(Int_t i = 1 ; i<=24;i++)
+	{
+	  hodoCor += "- ";
+	  hodoCor += par[i];
+	  hodoCor += "*(hodID ==";
+	  hodoCor += i;
+	  hodoCor += ")";
+	}
+      tree->SetAlias("hodTAC",hodoCor);
+      //HOD time offset//
+
+  
+  
+      /*
+      //Beam Image//
+      TCanvas *c1 = new TCanvas("c1","c1",1200,800);
+      c1->Divide(3,2);
+      c1->cd(1);
+      tree->Draw("bdc1Y:bdc1X>>h1(200,-40,40,200,-40,40)","","col");
+      c1->cd(2);
+      tree->Draw("bdc2Y:bdc2X>>h2(200,-40,40,200,-40,40)","","col");
+      c1->cd(3);
+      tree->Draw("tgtY:tgtX>>h3(200,-40,40,200,-40,40)","","col");
+
+      c1->cd(4);
+      tree->Draw("bdc1Y:bdc1X>>h4(200,-40,40,200,-40,40)",cut_34na,"col");
+      c1->cd(5);
+      tree->Draw("bdc2Y:bdc2X>>h5(200,-40,40,200,-40,40)",cut_34na,"col");
+      c1->cd(6);
+      tree->Draw("tgtY:tgtX>>h6(200,-40,40,200,-40,40)",cut_reaction&&cut_34na,"col");
+      //Beam Image//
+      */
+
+  
+  
+
+      c2->cd(1);
+      tree->Draw("hodQA>>hodqsub1(1000,200,550)",cut_32ne&&cut_reaction);
+      tree->Draw("sqrt(hodQA/hodTAC)+hodTAC*0.01-1>>hodqsub2(1000,1.5,3)",cut_32ne&&cut_reaction);
+      tree->Draw("sqrt(hodQA)/hodTAC+hodTAC*0.004-0.3>>hodqsub3(1000,0.2,0.35)",cut_32ne&&cut_reaction);
+      gDirectory->GetObject("hodqsub1",hodqsub1);
+      gDirectory->GetObject("hodqsub2",hodqsub2);
+      gDirectory->GetObject("hodqsub3",hodqsub3);
+      hodq1->Add(hodqsub1);
+      hodq2->Add(hodqsub2);
+      hodq3->Add(hodqsub3);
+      gPad->SetLogy();
+      hodq1->Draw();
+      c2->cd(2);
+      gPad->SetLogy();
+      hodq2->Draw();
+      c2->cd(3);
+      gPad->SetLogy();
+      hodq3->Draw();
+      c2->cd(4);
+      tree->Draw("hodQA:hodTAC>>histQ1(200,71,77,200,200,550)",cut_32ne&&cut_reaction,"col");
+      tree->Draw("sqrt(hodQA/hodTAC)+hodTAC*0.01-1:hodTAC>>histQ2(200,71,77,200,1.5,3)",cut_32ne&&cut_reaction,"col");
+      tree->Draw("sqrt(hodQA)/hodTAC+hodTAC*0.004-0.3:hodTAC>>histQ3(200,71,77,200,0.2,0.35)",cut_32ne&&cut_reaction,"col");
+      gDirectory->GetObject("histQ1",histQ1);
+      gDirectory->GetObject("histQ2",histQ2);
+      gDirectory->GetObject("histQ3",histQ3);
+      hsumQ1->Add(histQ1);
+      hsumQ2->Add(histQ2);
+      hsumQ3->Add(histQ3);
+      hsumQ1->Draw("col");
+      c2->cd(5);
+      hsumQ2->Draw("col");
+      c2->cd(6);
+      hsumQ3->Draw("col");
+      
+      //tree->Draw("hodTAC:fdc2X>>hist(200,-1200,500,200,71,77)",cut_34na,"col");
+      //gDirectory->GetObject("hist",hist);
+      //hist->Draw("col");
+      //hsum->Add(hist);
+      //hsum->Draw("col");
+      //tree->Draw("hodTAC:hodID>>hod3(24,0.5,24.5,200,65,95)","","colz");
+
+      //c2->Print(Form("./fig/%s.pdf",filename.Data()));
+
+      //TFile *data = new TFile(Form("%s.data",filename.Data()),"recreate");
+      //hist->Write();
+      //data->Close();
+    }
+  
+}

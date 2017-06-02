@@ -1,0 +1,210 @@
+#include "TFile.h"
+#include "TTree.h"
+#include "TH1.h"
+#include "TSpectrum.h"
+#include "TString.h"
+#include "TCanvas.h"
+#include "TMath.h"
+#include "TF1.h"
+#include "TGraph.h"
+#include <iostream>
+#include <fstream>
+
+void tcal()
+{
+  TFile *file = new TFile("./root/run0302.root.BeamPla");
+  TTree *tree = (TTree*)file->Get("BeamPla");
+
+  TH1 *htl = new TH1D("htl","htl",33000,0,66000);
+  TH1 *htr = new TH1D("htr","htr",33000,0,66000);
+
+
+  Int_t detNum;
+  TString detNamelist[5] = {"f3Pla","f5Pla","f7Pla","f13Pla1","f13Pla2"};
+  TString detName;
+  
+  cout<<"Choose detector"<<endl;
+  cout<<"F3  Plastic  : 0"<<endl;
+  cout<<"F5  Plastic  : 1"<<endl;
+  cout<<"F7  Plastic  : 2"<<endl;
+  cout<<"F13 Plastic1 : 3"<<endl;
+  cout<<"F13 Plastic2 : 4"<<endl;
+ 
+  cin>>detNum;
+
+  detName = detNamelist[detNum];
+
+  ofstream file1(Form("./parameter/tcal_%s.dat",detName.Data()));
+  
+  TCanvas *c1 = new TCanvas("c1","c1",1200,600);
+  c1->Divide(2,1);
+
+  c1->cd(1);
+  tree->Draw(Form("%sTLRaw>>htl",detName.Data()));
+
+  Int_t peakN = 0;
+  Double_t peakX1[200]={0,};
+
+
+  for(Int_t i=0;i<=htl->GetNbinsX();i++)
+    {
+      if(htl->GetBinContent(i)<=30 && htl->GetBinContent(i+1)>30)
+	{
+	  peakX1[peakN] = htl->GetBinCenter(i);
+	  peakN++;
+	  //std::cout<<peakN<< " : " <<htl->GetBinCenter(i)<<endl;
+	  i+=100;
+	}
+    }
+
+  std::cout<<"Peak number is "<<peakN<<endl;
+  
+  Double_t *ch1 = new Double_t[peakN];
+  Double_t *err1 = new Double_t[peakN];
+  Double_t *time1 = new Double_t[peakN];
+  
+
+  TCanvas *c2 = new TCanvas("c2","c2",1600,960);
+  c2->Divide(5,4);
+  c2->Print(Form("./fig/tlraw_%s.pdf[",detName.Data()));
+  
+  TH1 *hist;
+  TF1 *fit1;
+  Double_t min,max,center,bin;
+  Double_t range = 30;
+  Double_t width = 5;
+  for(Int_t id=0;id<peakN;id++)
+    {
+      c2->cd((id%20)+1);
+      center = peakX1[id];
+      max = center + range;
+      min = center - range;
+      bin = range;
+      //cout<<center[id]<<endl;
+      tree->Draw(Form("%sTLRaw>>htl%d(%lf,%lf,%lf)",detName.Data(),id+1,bin,min,max));
+      hist = (TH1D*)gDirectory->Get(Form("htl%d",id+1));
+      hist->SetTitle(Form("Peak %d",id+1));
+      hist->GetXaxis()->SetTitle("channel (ch)");
+      hist->Fit("gaus","rq","",center-width,center+width);
+      fit1 = (TF1*)hist->GetFunction("gaus");
+      ch1[id] = fit1->GetParameter(1);
+      err1[id] = fit1->GetParameter(2);
+      fit1->SetParameter(1,ch1[id]);
+      fit1->SetParameter(2,err1[id]);
+      hist->Fit(fit1,"rq","",ch1[id]-width,ch1[id]+width);
+      ch1[id] = fit1->GetParameter(1);
+      err1[id] = fit1->GetParameter(2);
+      
+      cout<<"Peak "<<id+1<<" is fitting..."<<endl;
+      c2->Update();
+    }
+			  
+
+  /*  
+  TH1 *hist;
+  TF1 *fit1, *fit2;
+  Double_t min,max,center;
+  Double_t range = 30;
+  Double_t width = 5;
+  
+  TCanvas *c2 = new TCanvas("c2","c2",1600,960);
+  c2->Divide(5,4);
+  c2->Print(Form("./fig/tlraw_%s.pdf[",detName.Data()));
+  for(Int_t id=0;id<ts1->GetNPeaks();id++)
+    {
+      c2->cd((id%20)+1);
+      center = peakX1[id];
+      max = center + range;
+      min = center - range;
+      bin = range;
+      
+      tree->Draw(Form("%sTLRaw>>htl%d(%lf,%lf,%lf)",detName.Data(),id+1,bin,min,max));
+      hist = (TH1D*)gDirectory->Get(Form("htl%d",id+1));
+      hist->SetTitle(Form("Peak %d",id+1));
+      hist->GetXaxis()->SetTitle("channel (ch)");
+      hist->Fit("gaus","rq","",center-width,center+width);
+      fit1 = (TF1*)hist->GetFunction("gaus");
+      ch1[id] = fit1->GetParameter(1);
+      err1[id] = fit1->GetParameter(2);
+      cout<<"Peak "<<id+1<<" is fitting..."<<endl;
+      c2->Update();
+
+      if((id+1)%20==0)
+	c2->Print(Form("./fig/tlraw_%s.pdf",detName.Data()));
+    }
+  c2->Print(Form("./fig/tlraw_%s.pdf]",detName.Data()));
+  
+  TCanvas *c3 = new TCanvas("c3","c3",1600,960);
+  c3->Divide(5,4);
+  c3->Print(Form("./fig/trraw_%s.pdf[",detName.Data()));
+  for(Int_t id=0;id<ts2->GetNPeaks();id++)
+    {
+      c3->cd((id%20)+1);
+      center = peakX2[id];
+      max = center + range;
+      min = center - range;
+      bin = range;
+      
+      tree->Draw(Form("%sTRRaw>>htr%d(%lf,%lf,%lf)",detName.Data(),id+1,bin,min,max));
+      hist = (TH1D*)gDirectory->Get(Form("htr%d",id+1));
+      hist->SetTitle(Form("Peak %d",id+1));
+      hist->GetXaxis()->SetTitle("channel (ch)");
+      hist->Fit("gaus","rq","",center-width,center+width);
+      fit2 = (TF1*)hist->GetFunction("gaus");
+      ch2[id] = fit2->GetParameter(1);
+      err2[id] = fit2->GetParameter(2);
+      cout<<"Peak "<<id+1<<" is fitting..."<<endl;
+      c3->Update();
+
+      if((id+1)%20==0)
+	c3->Print(Form("./fig/trraw_%s.pdf",detName.Data()));
+    }
+
+  c3->Print(Form("./fig/trraw_%s.pdf]",detName.Data()));
+
+
+  TCanvas *c4 = new TCanvas("c4","c4",800,600);
+  c4->Print(Form("./fig/tcal_%s.pdf[",detName.Data()));
+  TGraphErrors *gr1 = new TGraphErrors(ts1->GetNPeaks(),ch1,time1,err1,0);
+  gr1->Fit("pol1","q");
+  gr1->SetMarkerStyle(24);
+  gr1->SetTitle(Form("%s Raw TimeL ",detName.Data()));
+  gr1->GetXaxis()->SetTitle("channel (ch)");
+  gr1->GetYaxis()->SetTitle("time (nsec)");
+  gr1->Draw("AP");
+  c4->Update();
+  c4->Print(Form("./fig/tcal_%s.pdf",detName.Data()));
+
+  TGraphErrors *gr2 = new TGraphErrors(ts2->GetNPeaks(),ch2,time2,err2,0);
+  gr2->Fit("pol1","q");
+  gr2->SetMarkerStyle(24);
+  gr2->SetTitle(Form("%s Raw TimeR ",detName.Data()));
+  gr2->GetXaxis()->SetTitle("channel (ch)");
+  gr2->GetYaxis()->SetTitle("time (nsec)");
+  gr2->Draw("AP");
+  c4->Update();
+  c4->Print(Form("./fig/tcal_%s.pdf",detName.Data()));
+
+  c4->Print(Form("./fig/tcal_%s.pdf]",detName.Data()));
+
+
+  //file1<<detName.Data()<<endl;
+  
+  TF1 *func1 = (TF1*)gr1->GetFunction("pol1");
+  file1<<"Left"<<endl;
+  file1<<"offset\t\t"<<func1->GetParameter(0)<<std::endl;
+  file1<<"slope\t\t"<<func1->GetParameter(1)<<std::endl;
+  file1<<"chi2/NDF\t"<<func1->GetChisquare()/func1->GetNDF()<<std::endl;
+
+  TF1 *func2 = (TF1*)gr2->GetFunction("pol1");
+  file1<<"Right"<<endl;
+  file1<<"offset\t\t"<<func2->GetParameter(0)<<std::endl;
+  file1<<"slope\t\t"<<func2->GetParameter(1)<<std::endl;
+  file1<<"chi2/NDF\t"<<func2->GetChisquare()/func2->GetNDF()<<std::endl;
+
+  
+  delete [] peakX1,index1,peakX2,index2,ch1,err1,ch2,err2;
+  file1.close();
+  */
+
+}

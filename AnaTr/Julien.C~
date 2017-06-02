@@ -1,0 +1,273 @@
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "TArtCore.hh"
+
+#include "TString.h"
+#include "TRegexp.h"
+
+#include "Julien.H"
+
+void Julien::ReadParameters(std::string var, std::ifstream &is, std::vector<Double_t> &res){
+  std::string line;
+  is.clear();
+  is.seekg(0,std::ios::beg);
+  //  std::cout << "-------------------------------"  << std::endl; 
+  //  std::cout << "Look for : " << var << std::endl; 
+  while (is.good() ){	
+    getline (is,line);    
+    if(TString(line).Contains(var+"[]")){
+
+      while(1){
+	getline (is,line);
+	TString data(line);
+	//	std::cout << "Line : " << line << std::endl; 
+	data.ReplaceAll(",","") ;
+	data(TRegexp("//.*")) = 0;
+	//	std::cout << "Clean : " << data << std::endl;
+	if(data.IsNull()){
+	  break;
+	}
+	std::istringstream ss(data.Data());
+	Double_t tmp ;
+	//      std::cout << "Results : " ;
+	while(ss >> tmp){;
+	  //	std::cout << "[" << tmp << "] " ;
+	  res.push_back(tmp);
+	}
+	//      std::cout << std::endl << std::endl;
+      }
+    }
+  }
+  is.seekg(0);
+  return ;
+}
+
+void Julien::ReadParameters(std::string var, std::ifstream &is, std::vector<Int_t> &res){
+  std::vector<Double_t> tmp ;
+  ReadParameters(var,is,tmp);
+  for(std::vector<Double_t>::size_type i = 0; i != tmp.size(); i++) {
+    res.push_back(tmp[i]);
+  }
+  return ;
+}
+
+void Julien::ReadParameters(std::string var, std::ifstream &is, Double_t &res){
+  std::string line;
+  is.clear();
+  is.seekg(0,std::ios::beg);
+  //  std::cout << "-------------------------------"  << std::endl; 
+  //  std::cout << "Look for : " << var << std::endl; 
+  while (is.good() ){	
+    getline (is,line);    
+    if(TString(line).Contains(var)){
+      TString data(line);
+      //      std::cout << "Line : " << line << std::endl; 
+      data.ReplaceAll(",","") ;
+      data(TRegexp("//.*")) = "";
+      data(TRegexp(".*"+var+".*=")) = "";
+      data(TRegexp(";")) = "";
+      //      std::cout << "Clean : " << data << std::endl;
+
+      std::istringstream ss(data.Data());
+      Double_t tmp ;
+      //      std::cout << "Results : " ;
+      while(ss >> tmp){;
+	//	std::cout << "[" << tmp << "] " ;	
+      }
+      //      std::cout << std::endl << std::endl;
+      res = tmp;
+      is.seekg(0);
+      return ;
+    }
+  }
+}
+
+void Julien::ReadParameters(std::string var, std::ifstream &is, Int_t &res){
+  Double_t tmp ;
+  ReadParameters(var, is, tmp);
+  res = tmp ;
+  return ;
+}
+
+void Julien::PrintParameters(std::string var, std::vector<Double_t> res){
+  TString msg("\e[32m") ;
+  msg += var ;
+  msg += ": \e[0m" ;
+  msg += res[0];
+  if(res.size()>1){
+    msg += ", ";
+    msg += res[1];
+    if(res.size()>4){     
+      msg += ", ... ";
+    } else if(res.size()>2){
+      msg += ", ";
+    }
+    if(res.size()>3){
+      msg += res[res.size()-2];
+      msg += ", ";
+    }
+    if(res.size()>2){
+      msg += res[res.size()-1];
+    }
+  }
+  msg += " [";
+  msg += res.size() ;
+  msg += " parameter(s)]";
+  
+  TArtCore::Info(__FILE__,msg.Data());
+}
+void Julien::PrintParameters(std::string var, std::vector<Int_t> res){
+  std::vector<Double_t> v_float(res.begin(), res.end());
+  PrintParameters(var,v_float);
+}
+
+Bool_t Julien::ReadParameterMultiDimFit(){
+
+
+  // rigidity 
+
+  TString multidimfile = std::getenv("SAMURAI_MULTIDIM_FILE_RIG");
+
+  if(!multidimfile.IsNull()){
+    std::ifstream multidimstream(multidimfile.Data());
+        
+    if (multidimstream.is_open()){
+      ReadParameters("gNVariables"   ,multidimstream, r_gNVariables    );
+      ReadParameters("gNCoefficients",multidimstream, r_gNCoefficients );
+      ReadParameters("gDMean"        ,multidimstream, r_gDMean         );
+      ReadParameters("gXMin",multidimstream,r_gXMin);
+      ReadParameters("gXMax",multidimstream,r_gXMax);
+      ReadParameters("gCoefficient",multidimstream,r_gCoefficient);
+      //      ReadParameters("gCoefficientRMS",multidimstream,r_gCoefficientRMS);
+      ReadParameters("gPower",multidimstream,r_gPower);      
+      multidimstream.close();
+    }
+    
+    else {
+      TArtCore::Error(__FILE__, "Unable to open file %s ",multidimfile.Data());
+      return kFALSE;
+    }
+
+    if(
+       (   (UInt_t)r_gNCoefficients != r_gCoefficient.size() )
+       || ((UInt_t)r_gNVariables    != r_gXMin.size() )
+       || ((UInt_t)r_gNVariables    != r_gXMax.size() )
+       || ((UInt_t)r_gNVariables*r_gNCoefficients    != r_gPower.size())){
+
+      TArtCore::Info(__FILE__,"\e[31m\e[1mMultDimFit parameters for rigidity:\e[0m");
+      TArtCore::Info(__FILE__,"\e[31min file:\e[0m  %s",multidimfile.Data());
+      TArtCore::Info(__FILE__,"r_gNCoefficients,r_gNVariables %d,%d",r_gNCoefficients,r_gNVariables);
+      PrintParameters("gXMin",r_gXMin);
+      PrintParameters("gXMax",r_gXMax);
+      PrintParameters("gCoefficient",r_gCoefficient);
+      PrintParameters("gPower",r_gPower);      
+      TArtCore::Error(__FILE__,"Error reading multdimfit file %s",multidimfile.Data());
+
+      return kFALSE;
+    }
+
+  } else {
+    return kFALSE;
+  }
+
+  TArtCore::Info(__FILE__,"\e[32m\e[1mMultDimFit parameters for rigidity:\e[0m");
+  TArtCore::Info(__FILE__,"\e[32min file:\e[0m  %s",multidimfile.Data());
+  PrintParameters("gXMin",r_gXMin);
+  PrintParameters("gXMax",r_gXMax);
+  PrintParameters("gCoefficient",r_gCoefficient);
+  PrintParameters("gPower",r_gPower);      
+
+  // path length
+
+  multidimfile = std::getenv("SAMURAI_MULTIDIM_FILE_LEN");
+
+  if(!multidimfile.IsNull()){
+    std::ifstream multidimstream(multidimfile.Data());
+        
+    if (multidimstream.is_open()){
+      ReadParameters("gNVariables"   ,multidimstream, l_gNVariables    );
+      ReadParameters("gNCoefficients",multidimstream, l_gNCoefficients );
+      ReadParameters("gDMean"        ,multidimstream, l_gDMean         );
+      ReadParameters("gXMin",multidimstream,l_gXMin);
+      ReadParameters("gXMax",multidimstream,l_gXMax);
+      ReadParameters("gCoefficient",multidimstream,l_gCoefficient);
+      //      ReadParameters("gCoefficientRMS",multidimstream,l_gCoefficientRMS);
+      ReadParameters("gPower",multidimstream,l_gPower);      
+      multidimstream.close();
+    }
+    
+    else {
+      TArtCore::Error(__FILE__, "Unable to open file %s ",multidimfile.Data());
+      return kFALSE;
+    }
+
+    if(
+       (   (UInt_t)l_gNCoefficients != l_gCoefficient.size() )
+       || ((UInt_t)l_gNVariables    != l_gXMin.size() )
+       || ((UInt_t)l_gNVariables    != l_gXMax.size() )
+       || ((UInt_t)l_gNVariables*l_gNCoefficients    != l_gPower.size())){
+      TArtCore::Info(__FILE__,"\e[31m\e[1mMultDimFit parameters for length:\e[0m");
+      TArtCore::Info(__FILE__,"\e[31min file:\e[0m  %s",multidimfile.Data());
+      TArtCore::Info(__FILE__,"l_gNCoefficients,l_gNVariables %d,%d",l_gNCoefficients,l_gNVariables);
+      PrintParameters("gXMin",l_gXMin);
+      PrintParameters("gXMax",l_gXMax);
+      PrintParameters("gCoefficient",l_gCoefficient);
+      PrintParameters("gPower",l_gPower);      
+      TArtCore::Error(__FILE__,"Error reading multdimfit file %s",multidimfile.Data());
+      return kFALSE;
+    }
+
+  } else {
+    return kFALSE;
+  }
+
+  TArtCore::Info(__FILE__,"\e[32m\e[1mMultDimFit parameters for path length:\e[0m");
+  TArtCore::Info(__FILE__,"\e[32min file:\e[0m %s",multidimfile.Data());
+  PrintParameters("gXMin",l_gXMin);
+  PrintParameters("gXMax",l_gXMax);
+  PrintParameters("gCoefficient",l_gCoefficient);
+  PrintParameters("gPower",l_gPower);      
+
+  return kTRUE;
+}
+
+
+// -------- WARNING: this a macro not a function ------------------------
+#define __GetFitResult__Macro__(t)					\
+  Double_t returnValue = t ## _gDMean;					\
+  Int_t  i = 0, j = 0, k = 0;						\
+  for (i = 0; i < t ## _gNCoefficients ; i++) {				\
+    Double_t term = t ## _gCoefficient[i];				\
+    for (j = 0; j < t ## _gNVariables;  j++) {				\
+      Int_t power = t ## _gPower[t ## _gNVariables * i + j];		\
+      Double_t p1 = 1, p2 = 0, p3 = 0, r = 0;				\
+      Double_t v =  1 + 2. / (t ## _gXMax[j] - t ## _gXMin[j]) * (x[j] - t ## _gXMax[j]); \
+      switch(power) {							\
+      case 1: r = 1;  break;						\
+      case 2: r = v;  break;						\
+      default:								\
+	p2 = v;								\
+	for (k = 3; k <= power; k++) {					\
+	  p3 = p2 * v;							\
+	  p3 = 2 * v * p2 - p1;						\
+	  p1 = p2; p2 = p3;						\
+	}								\
+	r = p3;								\
+      }									\
+      term *= r;							\
+    }									\
+    returnValue += term;						\
+  }									\
+  return returnValue; 
+// ----------------------------------------------------------------------
+
+Double_t Julien::GetRigidityFitResult(Double_t *x) {
+  __GetFitResult__Macro__(r)
+    }
+
+Double_t Julien::GetPathLengthFitResult(Double_t *x) {
+  __GetFitResult__Macro__(l)
+    }

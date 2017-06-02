@@ -1,0 +1,3 @@
+{
+  gROOT->ProcessLine("Double_t *center = new Double_t[2]");
+}

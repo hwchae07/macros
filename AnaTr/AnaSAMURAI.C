@@ -1,0 +1,114 @@
+#include "AnaSAMURAI.H"
+
+#include <iostream>
+#include "TFile.h"
+#include "TTree.h"
+#include "TMatrixD.h"
+#include "TMath.h"
+
+#include "MatCalc.H"
+
+void AnaSAMURAI(Int_t runNum)
+{
+
+  TFile *file = new TFile(Form("../../root/run%04d.root.FDC",runNum),"READ");
+  TTree *tree;
+  file->GetObject("FDC",tree);
+  tree->BuildIndex("RunNum","EventNum");
+  tree->AddFriend("BDC",Form("../../root/run%04d.root.BDC",runNum));
+  tree->GetFriend("BDC")->BuildIndex("RunNum","EventNum");
+  tree->AddFriend("HOD",Form("../../root/run%04d.root.HOD",runNum));
+  tree->GetFriend("HOD")->BuildIndex("RunNum","EventNum");
+  tree->AddFriend("BeamPla",Form("../../root/run%04d.root.BeamPla",runNum));
+  tree->GetFriend("BeamPla")->BuildIndex("RunNum","EventNum");
+
+
+  Int_t RunNum,EventNum;
+  Double_t fdc1X, fdc1Y, fdc1A, fdc1B;
+  Double_t fdc2X, fdc2Y, fdc2A, fdc2B;
+  Double_t bdc1X, bdc1Y, bdc2X, bdc2Y;
+  Int_t hodNum;
+  Int_t hodID[24];
+
+  tree->SetBranchAddress("RunNum",&RunNum);
+  tree->SetBranchAddress("EventNum",&EventNum);
+  tree->SetBranchAddress("fdc1X",&fdc1X);
+  tree->SetBranchAddress("fdc1A",&fdc1A);
+  tree->SetBranchAddress("fdc1Y",&fdc1Y);
+  tree->SetBranchAddress("fdc1B",&fdc1B);
+
+  tree->SetBranchAddress("fdc2X",&fdc2X);
+  tree->SetBranchAddress("fdc2A",&fdc2A);
+  tree->SetBranchAddress("fdc2Y",&fdc2Y);
+  tree->SetBranchAddress("fdc2B",&fdc2B);
+
+  tree->SetBranchAddress("bdc1X",&bdc1X);
+  tree->SetBranchAddress("bdc1Y",&bdc1Y);
+  tree->SetBranchAddress("bdc2X",&bdc2X);
+  tree->SetBranchAddress("bdc2Y",&bdc2Y);
+
+  tree->SetBranchAddress("hodNum",&hodNum);
+  tree->SetBranchAddress("hodID",&hodID);
+
+  
+  Double_t delta,deltax,deltaa,brho;
+
+  TFile *file2 = new TFile(Form("../../root/run%04d.root.SAMURAI",runNum),"RECREATE");
+  TTree *tree2 = new TTree("SAMURAI","SAMURAI");
+  tree2->Branch("RunNum",&RunNum,"RunNum/I");
+  tree2->Branch("EventNum",&EventNum,"EventNum/I");
+  tree2->Branch("deltax",&deltax,"deltax/D");
+  tree2->Branch("deltaa",&deltaa,"deltaa/D");
+  tree2->Branch("delta",&delta,"delta/D");
+  tree2->Branch("brho",&brho,"brho/D");
+  //tree2->Branch("hodNum",&hodNum,"hodNum/I");
+  //tree2->Branch("hodID",&hodID,"hodID[hodNum]/I");
+
+
+  for(Int_t i=0 ; i<tree->GetEntries() ; i++)
+    {
+      if(!(i%1000))
+	{
+	  std::cout<<"Progress rate(%): " << (Double_t)i/(Double_t)tree->GetEntries()*100 << "\r";
+	  std::cout.flush();
+	}
+      tree->GetEntry(i);
+      if(tree->GetEntryWithIndex(RunNum,EventNum)<0) continue;
+
+      Double_t tgtX = bdc1X + 1827./1000. * (bdc2X - bdc1X);
+      Double_t tgtY = bdc1Y + 1827./1000. * (bdc2Y - bdc1Y);
+
+      TMatrixD in(6,1);
+      TMatrixD out(6,1);
+      in(0,0) = fdc1X/10.;    //mm -> cm
+      in(1,0) = fdc1A*1000.;  //rad -> mrad
+      in(2,0) = fdc1Y/10.;    //mm -> cm
+      in(3,0) = fdc1B*1000.;  //rad -> mrad
+      in(4,0) = 0;
+      in(5,0) = 0;
+
+      out(0,0) = fdc2X/10.;    //mm -> cm
+      out(1,0) = fdc2A*1000.;  //rad -> mrad
+      out(2,0) = fdc2Y/10.;    //mm -> cm
+      out(3,0) = fdc2B*1000.;  //rad -> mrad
+      out(4,0) = 0;
+      out(5,0) = 0;
+
+      //hodID = 13;
+
+      //std::cout<<hodID[0]<<std::endl;
+      MatCalc *matcalc = new MatCalc(Form("../../matrix/hod_sm27.mat%02d",hodID[0]),0,0);
+      deltax = matcalc->CalcDelta(in,out,0);
+      deltaa = matcalc->CalcDelta(in,out,1);
+      delta = (deltax + deltaa) / 2.;
+      brho = (1 + delta/100.) * matcalc->Brho;
+      //brho = (1 + deltax/100.) * matcalc->Brho;
+      tree2->Fill();
+
+      delete matcalc;
+    }
+
+  tree2->Write();
+  file2->Close();
+
+}

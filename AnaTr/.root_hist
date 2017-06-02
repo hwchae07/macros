@@ -1,0 +1,66 @@
+TString test = "run0275.ridf"
+atoi(test)
+TString test = "
+TString test = "275"
+test = "275"
+test
+cout<<test
+atoi(test)
+.q
+5366-4479
+.q
+.q
+.L MatCalc.C+
+.q
+.L MatCalc.C+
+load
+test("../../matrix/hod_sm27.mat01")
+load
+.q
+.L MatCalc.C+
+test("../../matrix/hod_sm27.mat01")
+.q
+.L MatCalc.C+
+test("../../matrix/hod_sm27.mat01")
+.L MatCalc.C+
+.L MatCalc.C+
+test("../../matrix/hod_sm27.mat01")
+.L MatCalc.C+
+test("../../matrix/hod_sm27.mat01")
+.q
+TMath::C()
+TMath::C()/100000
+TMath::C()/1000000
+.q
+TRandom::Gaus(1,0)
+TRandom *test = new TRandom()
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+test->Gaus(1,1)
+.
+q
+.q

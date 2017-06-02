@@ -1,0 +1,30 @@
+#include "AnaSAMURAI.H"
+
+AnaSAMURAI::AnaSAMURAI():
+  AnaModule("SAMURAI"){;}
+
+AnaSAMURAI::~AnaSAMURAI(){
+  DeleteAll();
+}
+
+void AnaSAMURAI::InitParameter(){
+  parLoaded = true;
+}
+
+void AnaSAMURAI::InitDetector(){
+  detLoaded = true;
+}
+
+void AnaSAMURAI::DeleteAll(){
+}
+
+void AnaSAMURAI::Analysis(){
+  anaFlag = true;    //?
+  if (!detLoaded) return; 
+}
+
+void AnaSAMURAI::SetTree(){
+  AnaModule::SetTree();    //for buildindex
+  tree->Branch("delta",&delta,"delta/D");
+}
+

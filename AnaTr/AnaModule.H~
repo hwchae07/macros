@@ -1,0 +1,68 @@
+#ifndef ANAMODULE_H
+#define ANAMODULE_H
+
+#include "TString.h"
+#include "TTree.h"
+#include "TClonesArray.h"
+
+#include "TArtEventInfo.hh"
+#include "TArtEventStore.hh"
+
+class AnaModule {
+
+public:
+
+  AnaModule(const TString detName = "NoName"):
+    tree(NULL), parLoaded(false), detLoaded(false), anaFlag(false) {
+    this->detName = detName; }
+
+  virtual ~AnaModule(){} 
+
+  virtual void InitParameter() = 0;
+  virtual void InitDetector() = 0;
+  void PreAnalysis() {
+    TArtStoreManager* fStoreManager;
+    fStoreManager = TArtStoreManager::Instance();
+    TArtEventInfo* eventInfo = (TArtEventInfo*)((TClonesArray*)fStoreManager->FindDataContainer("EventInfo"))->At(0);
+    runNum = eventInfo->GetRunNumber();
+    eventNum = eventInfo->GetEventNumber();}
+  virtual void Analysis() = 0;
+
+  void InitTree() {  
+    tree = new TTree((const char*)detName,(const char*)detName);}
+  virtual void SetTree() {
+    if (!tree) return;
+    tree->Branch("RunNum",&runNum,"RunNum/I");
+    tree->Branch("EventNum",&eventNum,"EventNum/I");}
+  void FillTree() { 
+    if (!tree) return;
+    if (anaFlag) tree->Fill(); }
+
+  virtual void DeleteAll() = 0;
+
+  TTree* GetTree() { return tree; }
+
+  Bool_t IsParLoaded() {return parLoaded;}
+  Bool_t IsDetLoaded() {return detLoaded;}
+
+  TString GetDetName() {return detName;}
+
+protected:
+
+  TString detName;
+  TTree* tree;
+
+  Bool_t parLoaded;
+  Bool_t detLoaded;
+  Bool_t anaFlag;
+
+
+  // for run number
+  // 2017. 02. 14. by Hyunwoo
+  Int_t runNum;
+  
+  // for event number
+  Int_t eventNum;
+};
+
+#endif

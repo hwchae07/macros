@@ -1,0 +1,69 @@
+{
+  TFile *file = new TFile("./root/run0261.root.PPAC","r");
+  TTree *tree;
+  gDirectory->GetObject("PPAC",tree);
+  tree->BuildIndex("RunNum","EventNum");
+  tree->AddFriend("BeamPla","./root/run0261.root.BeamPla");
+  tree->GetFriend("BeamPla")->BuildIndex("RunNum","EventNum");
+
+  TFile *file2 = new TFile("./cut/f5ppac.root","r");
+  TCutG *f5cut;
+  gDirectory->GetObject("f5cut",f5cut);
+  
+  tree->SetAlias("tofc","TOF3_13-3*dT5");
+  tree->SetAlias("elossc","icbEloss-0.1*tofc-40");
+
+  TCut cut_30ne = "abs(elossc-18)<2 && abs(tofc+389.5)<1.5";
+
+  /*
+  tree->SetAlias("ppac1X","(ppac1AX+ppac1BX)/2.");
+  tree->SetAlias("ppac2X","(ppac2AX+ppac2BX)/2.");
+  tree->SetAlias("f5ppacX","(400*ppac2X + 250*ppac1X)/(400+250)");
+  */
+
+  TCanvas *c2 = new TCanvas("c2","c2",1000,1000);
+  c2->Divide(2,2);
+  c2->cd(1);
+  tree->Draw("ppac1AX:dT5Raw>>h1(400,-500,40,400,-150,150)","ppac1AX>-999&&f5cut","col");
+  tree->Draw("ppac1AX:dT5Raw>>hp1(200,-500,40)","ppac1AX>-999&&f5cut","prof");
+  TF1 *fit1 = new TF1("fit1","pol5",-500,40);
+  fit1->SetParLimits(5,-1000,0);
+  hp1->Fit(fit1,"r","",-500,40);
+  h1->Draw("COLZ");
+  hp1->Draw("SAME");
+
+  
+  c2->cd(2);
+  f5cut->SetVarY("ppac1BX");
+  tree->Draw("ppac1BX:dT5Raw>>h2(400,-500,40,400,-150,150)","ppac1BX>-999&&f5cut","col");
+  tree->Draw("ppac1BX:dT5Raw>>hp2(400,-500,40,400,-150,150)","ppac1BX>-999&&f5cut","prof");
+  TF1 *fit2 = new TF1("fit2","pol5",-500,40);
+  fit2->SetParLimits(5,-1000,0);
+  hp2->Fit(fit2,"r","",-500,40);
+  h2->Draw("colz");
+  hp2->Draw("same");
+  
+  c2->cd(3);
+  f5cut->SetVarY("ppac2AX");
+  tree->Draw("ppac2AX:dT5Raw>>h3(400,-500,40,400,-150,150)","ppac2AX>-999&&f5cut","col");
+  tree->Draw("ppac2AX:dT5Raw>>hp3(400,-500,40,400,-150,150)","ppac2AX>-999&&f5cut","prof");
+  TF1 *fit3 = new TF1("fit3","pol5",-500,40);
+  fit3->SetParameter(5,-1);
+  fit3->SetParLimits(5,-1000,0);
+  hp3->Fit(fit3,"r","",-500,40);
+  h3->Draw("colz");
+  hp3->Draw("same");
+  
+  c2->cd(4);
+  f5cut->SetVarY("ppac2BX");
+  tree->Draw("ppac2BX:dT5Raw>>h4(400,-500,40,400,-150,150)","ppac2BX>-999&&f5cut","col");
+  tree->Draw("ppac2BX:dT5Raw>>hp4(400,-500,40,400,-150,150)","ppac2BX>-999&&f5cut","prof");
+  TF1 *fit4 = new TF1("fit4","pol5",-500,40);
+  fit4->SetParameter(5,-1);
+  fit4->SetParLimits(5,-1000,0;
+  hp4->Fit(fit4,"rb","",-500,40);
+  h4->Draw("colz");
+  hp4->Draw("same");
+  
+  
+}

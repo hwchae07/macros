@@ -1,0 +1,151 @@
+#include "AnaPPAC.H"
+
+#include "TTree.h"
+
+#include "TArtPPAC.hh"
+
+AnaPPAC::AnaPPAC():
+  AnaModule("PPAC"),
+  fPPACParameters(NULL),
+  fCalibPPAC(NULL) {
+  ;}
+
+AnaPPAC::~AnaPPAC(){    
+  DeleteAll();}
+
+void AnaPPAC::InitParameter(){
+  fPPACParameters = TArtBigRIPSParameters::Instance();
+  fPPACParameters->LoadParameter((char*)"db/BigRIPSPPAC.xml");
+  parLoaded = true;}
+
+void AnaPPAC::InitDetector(){
+  if (!parLoaded) return;
+
+  fCalibPPAC = new TArtCalibPPAC;
+  detLoaded = true;}
+
+void AnaPPAC::Analysis(){
+  anaFlag = true;
+  if (!detLoaded) return;
+
+  fCalibPPAC->ClearData();
+  fCalibPPAC->ReconstructData();
+
+  TArtPPAC* ppac;
+  
+  ppac = fCalibPPAC->FindPPAC((char*)"F5PPAC-1A");
+  if (ppac)
+    {
+      if (ppac->GetX() > -999 && ppac->GetY() > -999)
+	{
+	  f5PPAC1AX = ppac->GetX();
+	  f5PPAC1AY = ppac->GetY();
+	  //f5PPAC1AQA = ppac->GetQARaw();
+	  f5PPAC1ATA = ppac->GetTA();
+	}
+      //else anaFlag = false;
+      else
+	{
+	  f5PPAC1AX = -999;
+	  f5PPAC1AY = -999;
+	  //f5PPAC1AQA = -999;
+	  f5PPAC1ATA = -999;
+	}
+    }
+  else anaFlag = false; 
+  
+  f5PPAC1BX = -999;
+  ppac = fCalibPPAC->FindPPAC((char*)"F5PPAC-1B");
+  if (ppac)
+    {
+      if (ppac->GetX() > -999 && ppac->GetY() > -999)
+	{
+	  f5PPAC1BX = ppac->GetX();
+	  f5PPAC1BY = ppac->GetY();
+	  //f5PPAC1BQA = ppac->GetQARaw();
+	  f5PPAC1BTA = ppac->GetTA();
+	}
+      //else anaFlag = false;
+      else
+	{
+	  f5PPAC1BX = -999;
+	  f5PPAC1BY = -999;
+	  //f5PPAC1BQA = -999;
+	  f5PPAC1BTA = -999;
+	}
+    }
+  else anaFlag = false; 
+  
+  //f5PPAC1BX = f5PPAC1BY = 0;
+
+  
+  ppac = fCalibPPAC->FindPPAC((char*)"F5PPAC-2A");
+  if (ppac)
+    {
+      if (ppac->GetX() > -999 && ppac->GetY() > -999)
+	{
+	  f5PPAC2AX = ppac->GetX();
+	  f5PPAC2AY = ppac->GetY();
+	  //f5PPAC2AQA = ppac->GetQARaw();
+	  f5PPAC2ATA = ppac->GetTA();
+	}
+      //else anaFlag = false;
+      else
+	{
+	  f5PPAC2AX = -999;
+	  f5PPAC2AY = -999;
+	  //f5PPAC2AQA = -999;
+	  f5PPAC2ATA = -999;
+	}	
+    }
+  else anaFlag = false; 
+
+  ppac = fCalibPPAC->FindPPAC((char*)"F5PPAC-2B");
+  if (ppac)
+    {
+      if (ppac->GetX() > -999 && ppac->GetY() > -999)
+	{
+	  f5PPAC2BX = ppac->GetX();
+	  f5PPAC2BY = ppac->GetY();
+	  //f5PPAC2BQA = ppac->GetQARaw();
+	  f5PPAC2BTA = ppac->GetTA();
+	}
+      //else anaFlag = false;
+      else
+	{
+	  f5PPAC2BX = -999;
+	  f5PPAC2BY = -999;
+	  //f5PPAC2BQA = -999;
+	  f5PPAC2BTA = -999;
+	}
+    }
+  else anaFlag = false; 
+  
+}
+
+void AnaPPAC::DeleteAll(){
+  if (fCalibPPAC)    delete fCalibPPAC;
+}
+
+void AnaPPAC::SetTree(){ 
+  AnaModule::SetTree(); 
+  tree->Branch("ppac1AX",&f5PPAC1AX,"ppac1AX/D");
+  tree->Branch("ppac1AY",&f5PPAC1AY,"ppac1AY/D");
+  tree->Branch("ppac1BX",&f5PPAC1BX,"ppac1BX/D");
+  tree->Branch("ppac1BY",&f5PPAC1BY,"ppac1BY/D");
+  tree->Branch("ppac2AX",&f5PPAC2AX,"ppac2AX/D");
+  tree->Branch("ppac2AY",&f5PPAC2AY,"ppac2AY/D");
+  tree->Branch("ppac2BX",&f5PPAC2BX,"ppac2BX/D");
+  tree->Branch("ppac2BY",&f5PPAC2BY,"ppac2BY/D");
+
+  //tree->Branch("ppac1AQA",&f5PPAC1AQA,"ppac1AQA/D");
+  tree->Branch("ppac1ATA",&f5PPAC1ATA,"ppac1ATA/D");
+  //tree->Branch("ppac1BQA",&f5PPAC1BQA,"ppac1AQB/D");
+  tree->Branch("ppac1BTA",&f5PPAC1BTA,"ppac1ATB/D");
+  //tree->Branch("ppac2AQA",&f5PPAC2AQA,"ppac2AQA/D");
+  tree->Branch("ppac2ATA",&f5PPAC2ATA,"ppac2ATA/D");
+  //tree->Branch("ppac2BQA",&f5PPAC2BQA,"ppac2BQA/D");
+  tree->Branch("ppac2BTA",&f5PPAC2BTA,"ppac2BTA/D");
+
+}
+

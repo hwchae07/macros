@@ -1,0 +1,22 @@
+#ifndef ANATEST_H
+#define ANATEST_H
+
+#include <csignal>
+
+#include "TFile.h"
+
+// Variable for signal handling
+bool end;
+
+// Signal Handling Procedure
+void SigHandler(int param){
+  end = true;
+}
+
+void PrintUsage();
+void PrintTitle();
+int SelectModule();
+
+TFile* LoadRootFile(const char* name, const char* detName, bool readOnly = true);
+
+#endif

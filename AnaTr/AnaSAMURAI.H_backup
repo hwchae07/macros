@@ -1,0 +1,26 @@
+#ifndef ANASAMURAI_H
+#define ANASAMURAI_H
+
+#include "AnaModule.H"
+
+class AnaSAMURAI : public AnaModule {
+
+public:
+
+  AnaSAMURAI();
+  virtual ~AnaSAMURAI();
+
+  void InitParameter();
+  void InitDetector();
+  void Analysis();
+  void SetTree();
+  void DeleteAll();
+  
+private:
+  
+  void LoadMatrix(const char* filename);
+
+  Double_t delta;
+  
+};
+#endif
