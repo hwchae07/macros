@@ -252,6 +252,30 @@ void tcal_pla()
   c5->Print(Form("./fig/tdc_res_%s.pdf",detName.Data()));
 
   c5->Print(Form("./fig/tdc_res_%s.pdf]",detName.Data()));
+
+
+  
+  //histogram for residue...
+  TCanvas *c6 = new TCanvas("c6","c6",800,600);
+  c6->Print(Form("./fig/tdc_res_hist_%s.pdf[",detName.Data()));
+  TH1 *h1 = new TH1D("h1","h1",15,-0.03,0.03);
+  TH1 *h2 = new TH1D("h2","h2",15,-0.03,0.03);
+  for(Int_t i=0;i<peakN1;i++)
+    h1->Fill(res1[i]);
+  for(Int_t i=0;i<peakN2;i++)
+    h2->Fill(res2[i]);
+  h1->SetTitle(Form("%s Residual Time (L);Residual Time (ns)",detName.Data()));
+  h2->SetTitle(Form("%s Residual Time (R);Residual Time (ns)",detName.Data()));
+  h1->Draw();
+  c6->Update();
+  c6->Print(Form("./fig/tdc_res_hist_%s.pdf",detName.Data()));
+  h2->Draw();
+  c6->Update();
+  c6->Print(Form("./fig/tdc_res_hist_%s.pdf",detName.Data()));
+
+  c6->Print(Form("./fig/tdc_res_hist_%s.pdf]",detName.Data()));
+
+  
   
   file1<<"Right"<<endl;
   file1<<"offset\t\t"<<func2->GetParameter(0)<<std::endl;
@@ -269,5 +293,6 @@ void tcal_pla()
   c4->Close();
   c4->Close();
   c5->Close();
+  c6->Close();
 
 }

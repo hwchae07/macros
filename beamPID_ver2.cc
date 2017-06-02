@@ -16,6 +16,16 @@
 
   //chain->Draw("beamZ:beamAoZ>>h1(1000,2.8,3.4,1000,6,12)","","colz");
 
-  chain->Draw("f7PlaTL:sqrt(Q7)","","colz");
+  TCanvas *c1 = new TCanvas("c1","c1",1200,600);
+  c1->Divide(2,1);
+  c1->cd(1);
+  chain->Draw("f7PlaTL:sqrt(Q7)>>h1(200,14,30,200,658,677)","b34na","colz");
+  TH1 *h1 = (TH1D*)gDirectory->Get("h1");
+  h1->SetTitle("{}^{34}Na;#sqrt{Q};T (arbitrary)");
+  c1->cd(2);
+  chain->Draw("f7PlaTL:sqrt(Q7)>>h2(200,14,30,200,658,677)","b32ne","colz");
+  TH1 *h2 = (TH1D*)gDirectory->Get("h2");
+  h2->SetTitle("{}^{32}Ne;#sqrt{Q};T (arbitrary)");
+  c1->Print("./fig/beamPlaSlewCheck.pdf");
 
 }

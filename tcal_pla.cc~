@@ -117,7 +117,7 @@ void tcal_pla()
       hist->Fit("gaus","rq","",center-width,center+width);
       fit1 = (TF1*)hist->GetFunction("gaus");
       ch1[id] = fit1->GetParameter(1);
-      err1[id] = fit1->GetParameter(2)/ndf;
+      err1[id] = fit1->GetParameter(2)/sqrt(ndf);
 
       for(Int_t j=0;j<3;j++)
 	{
@@ -125,7 +125,7 @@ void tcal_pla()
 	  fit1->SetParameter(2,err1[id]);
 	  hist->Fit(fit1,"rq","",ch1[id]-width,ch1[id]+width);
 	  ch1[id] = fit1->GetParameter(1);
-	  err1[id] = fit1->GetParameter(2)/ndf;
+	  err1[id] = fit1->GetParameter(2)/sqrt(ndf);
 	}
       cout<<"Peak "<<id+1<<" is fitting..."<<endl;
       c2->Update();
@@ -165,7 +165,7 @@ void tcal_pla()
       hist->Fit("gaus","rq","",center-width,center+width);
       fit1 = (TF1*)hist->GetFunction("gaus");
       ch2[id] = fit1->GetParameter(1);
-      err2[id] = fit1->GetParameter(2)/ndf;
+      err2[id] = fit1->GetParameter(2)/sqrt(ndf);
 
       for(Int_t j=0;j<3;j++)
 	{
@@ -173,7 +173,7 @@ void tcal_pla()
 	  fit1->SetParameter(2,err2[id]);
 	  hist->Fit(fit1,"rq","",ch2[id]-width,ch2[id]+width);
 	  ch2[id] = fit1->GetParameter(1);
-	  err2[id] = fit1->GetParameter(2)/ndf;
+	  err2[id] = fit1->GetParameter(2)/sqrt(ndf);
 	}
       cout<<"Peak "<<id+1<<" is fitting..."<<endl;
       c3->Update();

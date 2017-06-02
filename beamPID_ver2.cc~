@@ -16,6 +16,6 @@
 
   //chain->Draw("beamZ:beamAoZ>>h1(1000,2.8,3.4,1000,6,12)","","colz");
 
-  chain->Draw("tofc713:Q7","","colz");
+  chain->Draw("f7PlaTL:sqrt(Q7)","","colz");
 
 }
