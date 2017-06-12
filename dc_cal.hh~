@@ -17,6 +17,24 @@ std::vector<int> bdc1layer;
 std::vector<int> bdc1tdc;
 std::vector<double> bdc1dl;
 
+std::vector<double> bdc1trackX;
+std::vector<double> bdc1trackY;
+std::vector<double> bdc1trackA;
+std::vector<double> bdc1trackB;
+
+std::vector<double> bdc1hitX;
+std::vector<double> bdc1hitY;
+std::vector<double> bdc1hitZ;
+
+std::vector<double> bdc1calX;
+std::vector<double> bdc1calY;
+
+std::vector<double> bdc1wireZ;
+
+std::vector<bool> bdc1isX;
+
+std::vector<double> bdc1chi;
+
 /*
 Int_t *bdc1layer;
 Int_t *bdc1tdc;
