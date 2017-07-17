@@ -1,0 +1,40 @@
+{
+  TFile *file = new TFile("./root/tdc_test.root");
+  TTree *tree = (TTree*)file->Get("bdc");
+
+  //(layer%4) <= 1 : X
+  //(layer%4) >= 2 : Y
+  //0,1 : X
+  //2,3 : Y
+  //4,5 : X
+  //6,7 : Y
+  int layer = 0;
+  TString layer_xy;
+  int layerIsX;
+
+  if(layer%4 < 2)
+    {
+      layer_xy = "bdc1hitX-bdc1wireX";
+      layerIsX = 1;
+    }
+  else
+    {
+      layer_xy = "bdc1hitY-bdc1wireY";
+      layerIsX = 0;
+    }
+  
+  TCanvas *c1 = new TCanvas("c1","c1",1500,900);
+  c1->Divide(5,3);
+
+  
+  for(int i=1;i<=15;i++)
+    {
+      c1->cd(i);
+      tree->Draw(Form("abs(%s):bdc1tdc>>h%d(120,1640,1760,200,-0.5,4)",layer_xy.Data(),i),Form("bdc1layer==%d&&bdc1isX==%d&&bdc1wireID==%d",layer,layerIsX,i),"colz");
+      c1->Update();
+    }
+
+  TCanvas *c2 = new TCanvas("c2","c2",600,600);
+  tree->Draw(Form("abs(%s):bdc1tdc>>h2d(120,1640,1760,200,-0.5,4)",layer_xy.Data()),Form("bdc1layer==%d&&bdc1isX==%d",layer,layerIsX),"colz");
+  
+}
