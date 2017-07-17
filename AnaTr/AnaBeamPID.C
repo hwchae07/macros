@@ -89,6 +89,14 @@ void AnaBeamPID(Int_t runNum)
   tree2->Branch("beamZ",&beamZ,"beamZ/D");
   tree2->Branch("beamAoZ",&beamAoZ,"beamAoZ/D");
 
+  tree2->SetAlias("T3","(f3PlaTL+f3PlaTR)/2");
+  tree2->SetAlias("T7","(f7PlaTL+f7PlaTR)/2");
+  tree2->SetAlias("T13","(f13Pla1TL+f13Pla1TR+f13Pla2TL+f13Pla2TR)/4");
+  tree2->SetAlias("TOF3_13","T13-T3");
+  tree2->SetAlias("TOF7_13","T13-T7");
+  tree2->SetAlias("TOF3_7","T7-T3");
+
+  
   //plastic TDC cut// 
   tree->Draw(">>evtlist",f3pla[0]&&f5pla[0]&&f7pla[0]&&f13pla1[0]&&f13pla2[0]);
   TEventList *evtlist = (TEventList*)gDirectory->Get("evtlist");
