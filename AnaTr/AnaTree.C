@@ -19,6 +19,9 @@
 #include "AnaBrho.H"
 #include "AnaSAMURAI.H"
 #include "AnaBeamPID.H"
+#include "AnaFragPID.H"
+#include "AnaRelE.H"
+#include "AnaNEBslew.H"
 
 #include "TArtStoreManager.hh"
 #include "TArtEventStore.hh"
@@ -64,6 +67,25 @@ int main(int argc, char** argv){
       AnaBeamPID(atoi(argv[1]));
       return 0;
     }
+
+  if (whichModule == 14)
+    {
+      AnaFragPID(atoi(argv[1]));
+      return 0;
+    }
+
+  if (whichModule == 15)
+    {
+      AnaRelE(atoi(argv[1]));
+      return 0;
+    }
+
+  if (whichModule == 16)
+    {
+      AnaNEBslew(atoi(argv[1]));
+      return 0;
+    }
+
   
   // Construction Part
   TArtStoreManager* fStoreManager;
@@ -154,13 +176,16 @@ int SelectModule(){
   cout << "   11. Brho" << endl;
   cout << "   12. Brho (by Chae)" <<endl;
   cout << "   13. BeamPID" << endl;
+  cout << "   14. FragPID" << endl;
+  cout << "   15. RelE" <<endl;
+  cout << "   16. NEBULA for slew" <<endl;
   cout << " ============================================= " << endl;
   Int_t n;
 
   do {
     cout << "  > ";  
     cin >> n;
-    if (n >= 0 && n <= 13) return n;
+    if (n >= 0 && n <= 16) return n;
   } while(1);
 
   return n;}

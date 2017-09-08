@@ -23,6 +23,8 @@ AnaHOD::AnaHOD():
   hodPlaTA = new Double_t[24];
   hodTURaw = new Double_t[24];
   hodTDRaw = new Double_t[24];
+  hodTUCal = new Double_t[24];
+  hodTDCal = new Double_t[24];
 
   hodQURaw = new Double_t[24];
   hodQDRaw = new Double_t[24];
@@ -40,6 +42,8 @@ AnaHOD::~AnaHOD(){
   delete hodPlaTA;
   delete hodTURaw;
   delete hodTDRaw;
+  delete hodTUCal;
+  delete hodTDCal;
 
   delete hodQURaw;
   delete hodQDRaw;
@@ -73,11 +77,53 @@ void AnaHOD::Analysis(){
   fin1.close();
   
   std::ifstream fin2("../../dat/physics_run_hodq.dat");
-  Double_t hodQ_offset[25];
-  for(Int_t id = 1;id<=24;id++)
+  Double_t hodQ_offset[25]={1,};
+  for(Int_t id = 8;id<=24;id++)
     fin2>>hodQ_offset[id];
-  fin2.close();  
+  fin2.close();
 
+  std::ifstream fin3("../../parameter/tcal_HOD_up_6th.dat");
+  Double_t hodTU_par[25][7]={0,};
+  for(Int_t i=1;i<=24;i++)
+    {
+      fin3>>hodTU_par[i][0];
+      fin3>>hodTU_par[i][1];
+      fin3>>hodTU_par[i][2];
+      fin3>>hodTU_par[i][3];
+      fin3>>hodTU_par[i][4];
+      fin3>>hodTU_par[i][5];
+      fin3>>hodTU_par[i][6];
+    }
+  fin3.close();
+
+  std::ifstream fin4("../../parameter/tcal_HOD_down_6th.dat");
+  Double_t hodTD_par[25][7]={0,};
+  for(Int_t i=1;i<=24;i++)
+    {
+      fin4>>hodTD_par[i][0];
+      fin4>>hodTD_par[i][1];
+      fin4>>hodTD_par[i][2];
+      fin4>>hodTD_par[i][3];
+      fin4>>hodTD_par[i][4];
+      fin4>>hodTD_par[i][5];
+      fin4>>hodTD_par[i][6];
+    }
+  fin4.close();
+
+  std::ifstream fintest("../../parameter/test_hodt.csv");
+  Double_t par0u[25];
+  Double_t par1u[25];
+  Double_t par0d[25];
+  Double_t par1d[25];
+  for(Int_t i=1;i<=24;i++)
+    {
+      fintest>>par0u[i];
+      fintest>>par1u[i];
+      fintest>>par0d[i];
+      fintest>>par1d[i];
+    }
+  fintest.close();
+  
   //  hodNum = fCalibHODPla->GetNumHODPla();
   //  if ( hodNum < 1 ) {
   //    anaFlag = false; return; }
@@ -92,12 +138,37 @@ void AnaHOD::Analysis(){
     hodPlaTA[hodNum] = pla->GetTimeSlew() + hodT_offset[0] + hodT_offset[pla->GetID()];
     hodTURaw[hodNum] = pla->GetTURaw();
     hodTDRaw[hodNum] = pla->GetTDRaw();
-
     hodQURaw[hodNum] = pla->GetQURaw();
     hodQDRaw[hodNum] = pla->GetQDRaw();
     
-
     hodQ[hodNum] = TMath::Sqrt(hodPlaQU[hodNum] * hodPlaQD[hodNum]) * hodQ_offset[hodID[hodNum]];
+
+    
+    Double_t parTU[7]={0,};
+    Double_t parTD[7]={0,};
+    Double_t chTU = pla->GetTURaw();
+    Double_t chTD = pla->GetTDRaw();
+    Int_t id = pla->GetID();
+    hodTUCal[hodNum] = 0;
+    hodTDCal[hodNum] = 0;
+
+    //hodTUCal[hodNum] = par0u[id];
+    //hodTDCal[hodNum] = par0d[id];
+    
+    for(Int_t j=0;j<=6;j++)
+      {
+	parTU[j] = hodTU_par[pla->GetID()][j];
+	parTD[j] = hodTD_par[pla->GetID()][j];
+
+	hodTUCal[hodNum] += parTU[j]*TMath::Power(chTU,j);
+	hodTDCal[hodNum] += parTD[j]*TMath::Power(chTD,j);
+      }
+
+    //hodPlaTA[hodNum] = (hodTUCal[hodNum] + hodTDCal[hodNum])/2. + hodT_offset[0] + hodT_offset[pla->GetID()];
+    //hodPlaTA[hodNum] = pla->GetTime()  + hodT_offset[pla->GetID()];
+    
+    
+
     
     hodNum++;}
   
@@ -109,7 +180,7 @@ void AnaHOD::Analysis(){
   Int_t index[24]={0,};
   TMath::Sort(hodNum,hodID,index,false);
   for(Int_t i=0 ; i<hodNum ; i++)
-    hodID[i] = hodID[index[i]];
+  hodID[i] = hodID[index[i]];
   //2017.02.16 Hyunwoo//
   */
 
@@ -132,6 +203,8 @@ void AnaHOD::SetTree(){
   tree->Branch("hodTA",hodPlaTA,"hodTA[hodNum]/D");
   tree->Branch("hodTURaw",hodTURaw,"hodTURaw[hodNum]/D");
   tree->Branch("hodTDRaw",hodTDRaw,"hodTDRaw[hodNum]/D");
+  tree->Branch("hodTUCal",hodTUCal,"hodTUCal[hodNum]/D");
+  tree->Branch("hodTDCal",hodTDCal,"hodTDCal[hodNum]/D");
   
   tree->Branch("hodQURaw",hodQURaw,"hodQURaw[hodNum]/D");  
   tree->Branch("hodQDRaw",hodQDRaw,"hodQDRaw[hodNum]/D");

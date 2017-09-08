@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 
-void tcal_hod()
+void tcal_hod(int order=1)
 {
   TFile *file = new TFile("./root/run0302.root.HOD");
   TTree *tree = (TTree*)file->Get("HOD");
@@ -22,9 +22,20 @@ void tcal_hod()
 
   TString detName = "HOD";
 
-  ofstream fout("./parameter/tcal_HOD.dat");
+  TString numberingList[6] = {"1st","2nd","3rd","4th","5th","6th"};
+  TString numbering = numberingList[order-1];
+  ofstream fout1(Form("./parameter/tcal_HOD_up_%s.dat",numbering.Data()));
+  ofstream fout2(Form("./parameter/tcal_HOD_down_%s.dat",numbering.Data()));
   TF1 *fit;
-  fout<<setw(10)<<"up_off\t"<<setw(10)<<"up_slope\t"<<setw(10)<<"down_off\t"<<setw(10)<<"down_slope"<<std::endl;
+  TF1 *fit2;
+  TF1 *fit3;
+  TF1 *fit4;
+  TF1 *fit5;
+  TF1 *fit6;
+  TF1 *func_fit;
+  TH1 *hres1 = new TH1D();
+  TH1 *hres2 = new TH1D();
+  //fout<<setw(10)<<"up_off\t"<<setw(10)<<"up_slope\t"<<setw(10)<<"down_off\t"<<setw(10)<<"down_slope"<<std::endl;
   
   TCanvas *c1 = new TCanvas("c1","c1",1200,600);
   c1->Divide(2,1);
@@ -34,17 +45,23 @@ void tcal_hod()
 
   TCanvas *c3 = new TCanvas("c3","c3",1200,600);
   c3->Divide(2,1);
+
+  TCanvas *c4 = new TCanvas("c4","c4",1200,600);
+  c4->Divide(2,1);
   
-  c1->Print("./fig/RawTDC_HOD.pdf[");
-  c2->Print("./fig/tcal_HOD.pdf[");
-  c3->Print("./fig/tcal_HOD_res.pdf[");
+  c1->Print(Form("./fig/RawTDC_HOD_%s.pdf[",numbering.Data()));
+  c2->Print(Form("./fig/tcal_HOD_%s.pdf[",numbering.Data()));
+  c3->Print(Form("./fig/tcal_HOD_res_%s.pdf[",numbering.Data()));
+  c4->Print(Form("./fig/tcal_HOD_res_hist_%s.pdf[",numbering.Data()));
   //Int_t id=1;
 
   for(Int_t id=1;id<25;id++)
     {
+      hres1->Delete();
+      hres2->Delete();
   
       c1->cd(1);
-      tree->Draw("hodTURaw>>ht1(4950,51.5,5001.5)",Form("hodID==%d",id));
+      tree->Draw("hodTURaw>>ht1(3000,500.5,3500.5)",Form("hodID==%d",id));
       ht1 = (TH1D*)gDirectory->Get("ht1");
       ht1->SetNameTitle(Form("HOD Raw_up TDC ID%d",id),Form("HOD Raw_up TDC ID%d",id));
       ts1->Search(ht1,2,"",0.1);
@@ -67,22 +84,105 @@ void tcal_hod()
       c2->cd(1);
       TGraph *gr1 = new TGraph(ts1->GetNPeaks(),peakX1,time1);
       gr1->SetMarkerStyle(24);
-      gr1->Fit("pol1","q");
-      fit = gr1->GetFunction("pol1");
-      fout<<setw(10)<<fit->GetParameter(0)<<"\t"<<setw(10)<<fit->GetParameter(1)<<"\t";
+      fit = new TF1("fit1","pol1",0,3500);
+      gr1->Fit("fit1","rq");
+      
+      
+      if(order>=2)
+	{
+	  fit2 = new TF1("fit2","pol2",0,3500);
+	  fit2->SetParameter(0,fit->GetParameter(0));
+	  fit2->SetParameter(1,fit->GetParameter(1));
+	  gr1->Fit("fit2","q");
+
+	  fit2->SetParameters(fit2->GetParameters());
+	  gr1->Fit("fit2","q");
+	}
+
+      if(order>=3)
+	{
+	  fit3 = new TF1("fit3","pol3",0,3500);
+	  fit3->SetParameter(0,fit2->GetParameter(0));
+	  fit3->SetParameter(1,fit2->GetParameter(1));
+	  fit3->SetParameter(2,fit2->GetParameter(2));
+	  gr1->Fit("fit3","q");
+
+	  fit3->SetParameters(fit3->GetParameters());
+	  gr1->Fit("fit3","q");
+	}
+
+      if(order>=4)
+	{
+	  fit4 = new TF1("fit4","pol4",0,3500);
+	  fit4->SetParameter(0,fit3->GetParameter(0));
+	  fit4->SetParameter(1,fit3->GetParameter(1));
+	  fit4->SetParameter(2,fit3->GetParameter(2));
+	  fit4->SetParameter(3,fit3->GetParameter(3));
+	  gr1->Fit("fit4","q");
+
+	  fit4->SetParameters(fit4->GetParameters());
+	  gr1->Fit("fit4","q");
+	}
+      
+      if(order>=5)
+	{
+	  fit5 = new TF1("fit5","pol5",0,3500);
+	  fit5->SetParameter(0,fit4->GetParameter(0));
+	  fit5->SetParameter(1,fit4->GetParameter(1));
+	  fit5->SetParameter(2,fit4->GetParameter(2));
+	  fit5->SetParameter(3,fit4->GetParameter(3));
+	  fit5->SetParameter(4,fit4->GetParameter(4));
+	  gr1->Fit("fit5","q");
+	}
+      if(order>=6)
+	{
+	  fit6 = new TF1("fit6","pol6",0,3500);
+	  fit6->SetParameter(0,fit5->GetParameter(0));
+	  fit6->SetParameter(1,fit5->GetParameter(1));
+	  fit6->SetParameter(2,fit5->GetParameter(2));
+	  fit6->SetParameter(3,fit5->GetParameter(3));
+	  fit6->SetParameter(4,fit5->GetParameter(4));
+	  fit6->SetParameter(5,fit5->GetParameter(5));
+	  gr1->Fit("fit6","q");
+	  fout1<<setw(10)<<fit6->GetParameter(0)<<"\t"<<setw(10)<<fit6->GetParameter(1)<<"\t";
+	  fout1<<setw(10)<<fit6->GetParameter(2)<<"\t"<<setw(10)<<fit6->GetParameter(3)<<"\t";
+	  fout1<<setw(10)<<fit6->GetParameter(4)<<"\t"<<setw(10)<<fit6->GetParameter(5)<<"\t";
+	  fout1<<setw(10)<<fit6->GetParameter(6)<<endl;
+	}
+     
       gr1->SetTitle(Form("%s Raw_up TDC vs Time ID%d ",detName.Data(),id));
       gr1->GetXaxis()->SetTitle("channel (ch)");
       gr1->GetYaxis()->SetTitle("time (nsec)");
       gr1->Draw("AP");
-
-
+      
       c3->cd(1);
+      if(order==1)
+	func_fit = fit;
+      else if(order==2)
+	func_fit = fit2;
+      else if(order==3)
+	func_fit = fit3;
+      else if(order==4)
+	func_fit = fit4;
+      else if(order==5)
+	func_fit = fit5;
+      else if(order==6)
+	func_fit = fit6;
+
+
+      hres1 = new TH1D("hres1","hres1",15,-0.1,0.1);
+      
       for(Int_t i=0;i<ts1->GetNPeaks();i++)
-	res1[i] = time1[i] - fit->Eval(peakX1[i]);
+	{
+	  res1[i] = time1[i] - func_fit->Eval(peakX1[i]);
+	  hres1->Fill(res1[i]);
+	}
       //cout<<peakX1[ts1->GetNPeaks()-1]<<" "<<time1[ts1->GetNPeaks()-1]<<" "<<fit->Eval(peakX1[ts1->GetNPeaks()-1])<<endl;
 
       TGraph *gr11 = new TGraph(ts1->GetNPeaks(),peakX1,res1);
       gr11->SetTitle(Form("%s Raw_up Time residual",detName.Data()));
+      //gr11->GetXaxis()->SetRangeUser(0,3500);
+      gr11->GetYaxis()->SetRangeUser(-0.1,0.1);
       gr11->GetXaxis()->SetTitle("channel (ch)");
       gr11->GetYaxis()->SetTitle("res (nsec)");
       if(id==1)
@@ -93,7 +193,7 @@ void tcal_hod()
 
       
       c1->cd(2);
-      tree->Draw("hodTDRaw>>ht2(4950,51.5,5001.5)",Form("hodID==%d",id));
+      tree->Draw("hodTDRaw>>ht2(3000,500.5,3500.5)",Form("hodID==%d",id));
       ht2 = (TH1D*)gDirectory->Get("ht2");
       ht2->SetNameTitle(Form("HOD Raw_down TDC ID%d",id),Form("HOD Raw_down TDC ID%d",id));
       ts2->Search(ht2,2,"",0.1);
@@ -116,9 +216,73 @@ void tcal_hod()
       c2->cd(2);
       TGraph *gr2 = new TGraph(ts2->GetNPeaks(),peakX2,time2);
       gr2->SetMarkerStyle(24);
-      gr2->Fit("pol1","q");
-      fit = gr2->GetFunction("pol1");
-      fout<<setw(10)<<fit->GetParameter(0)<<"\t"<<setw(10)<<fit->GetParameter(1)<<endl;
+      fit = new TF1("fit1","pol1",0,3500);
+      gr2->Fit("fit1","rq");
+
+      if(order>=2)
+	{
+	  fit2 = new TF1("fit2","pol2",0,3500);
+	  fit2->SetParameter(0,fit->GetParameter(0));
+	  fit2->SetParameter(1,fit->GetParameter(1));
+	  gr2->Fit("fit2","q");
+
+	  fit2->SetParameters(fit2->GetParameters());
+	  gr2->Fit("fit2","q");
+	}
+
+      if(order>=3)
+	{
+	  fit3 = new TF1("fit3","pol3",0,3500);
+	  fit3->SetParameter(0,fit2->GetParameter(0));
+	  fit3->SetParameter(1,fit2->GetParameter(1));
+	  fit3->SetParameter(2,fit2->GetParameter(2));
+	  gr2->Fit("fit3","q");
+
+	  fit3->SetParameters(fit3->GetParameters());
+	  gr2->Fit("fit3","q");
+	}
+
+      if(order>=4)
+	{
+	  fit4 = new TF1("fit4","pol4",0,3500);
+	  fit4->SetParameter(0,fit3->GetParameter(0));
+	  fit4->SetParameter(1,fit3->GetParameter(1));
+	  fit4->SetParameter(2,fit3->GetParameter(2));
+	  fit4->SetParameter(3,fit3->GetParameter(3));
+	  gr2->Fit("fit4","q");
+
+	  fit4->SetParameters(fit4->GetParameters());
+	  gr2->Fit("fit4","q");
+	}
+      
+      if(order>=5)
+	{
+	  fit5 = new TF1("fit5","pol5",0,3500);
+	  fit5->SetParameter(0,fit4->GetParameter(0));
+	  fit5->SetParameter(1,fit4->GetParameter(1));
+	  fit5->SetParameter(2,fit4->GetParameter(2));
+	  fit5->SetParameter(3,fit4->GetParameter(3));
+	  fit5->SetParameter(4,fit4->GetParameter(4));
+	  gr2->Fit("fit5","q");
+	}
+      if(order>=6)
+	{
+	  fit6 = new TF1("fit6","pol6",0,3500);
+	  fit6->SetParameter(0,fit5->GetParameter(0));
+	  fit6->SetParameter(1,fit5->GetParameter(1));
+	  fit6->SetParameter(2,fit5->GetParameter(2));
+	  fit6->SetParameter(3,fit5->GetParameter(3));
+	  fit6->SetParameter(4,fit5->GetParameter(4));
+	  fit6->SetParameter(5,fit5->GetParameter(5));
+	  gr2->Fit("fit6","q");
+	  fout2<<setw(10)<<fit6->GetParameter(0)<<"\t"<<setw(10)<<fit6->GetParameter(1)<<"\t";
+	  fout2<<setw(10)<<fit6->GetParameter(2)<<"\t"<<setw(10)<<fit6->GetParameter(3)<<"\t";
+	  fout2<<setw(10)<<fit6->GetParameter(4)<<"\t"<<setw(10)<<fit6->GetParameter(5)<<"\t";
+	  fout2<<setw(10)<<fit6->GetParameter(6)<<endl;
+	}
+     
+
+      
       gr2->SetTitle(Form("%s Raw_down TDC vs Time ID%d ",detName.Data(),id));
       gr2->GetXaxis()->SetTitle("channel (ch)");
       gr2->GetYaxis()->SetTitle("time (nsec)");
@@ -126,12 +290,34 @@ void tcal_hod()
 
       
       c3->cd(2);
+      if(order==1)
+	func_fit = fit;
+      else if(order==2)
+	func_fit = fit2;
+      else if(order==3)
+	func_fit = fit3;
+      else if(order==4)
+	func_fit = fit4;
+      else if(order==5)
+	func_fit = fit5;
+      else if(order==6)
+	func_fit = fit6;
+
+
+      
+      hres2 = new TH1D("hres2","hres2",15,-0.1,0.1);
+      
       for(Int_t i=0;i<ts2->GetNPeaks();i++)
-	res2[i] = time2[i] - fit->Eval(peakX2[i]);
+	{
+	  res2[i] = time2[i] - func_fit->Eval(peakX2[i]);
+	  hres2->Fill(res2[i]);
+	}
       //cout<<peakX2[ts2->GetNPeaks()-1]<<" "<<time2[ts2->GetNPeaks()-1]<<" "<<fit->Eval(peakX2[ts2->GetNPeaks()-1])<<endl;
 
       TGraph *gr22 = new TGraph(ts2->GetNPeaks(),peakX2,res2);
       gr22->SetTitle(Form("%s Raw_down Time residual",detName.Data()));
+      //gr22->GetXaxis()->SetRangeUser(0,3500);
+      gr22->GetYaxis()->SetRangeUser(-0.1,0.1);      
       gr22->GetXaxis()->SetTitle("channel (ch)");
       gr22->GetYaxis()->SetTitle("res (nsec)");
       if(id==1)
@@ -140,23 +326,32 @@ void tcal_hod()
 	gr22->Draw("SAMEL");
   
 
+
+      c4->cd(1);
+      hres1->Draw();
+      c4->cd(2);
+      hres2->Draw();
       
       
       c1->Update();
       c2->Update();
       c3->Update();
+      c4->Update();
       //getchar();
 
-      c1->Print("./fig/RawTDC_HOD.pdf");
-      c2->Print("./fig/tcal_HOD.pdf");
-      c3->Print("./fig/tcal_HOD_res.pdf");
-
+      c1->Print(Form("./fig/RawTDC_HOD_%s.pdf",numbering.Data()));
+      c2->Print(Form("./fig/tcal_HOD_%s.pdf",numbering.Data()));
+      c4->Print(Form("./fig/tcal_HOD_res_hist_%s.pdf",numbering.Data()));
+      
     }
-  c1->Print("./fig/RawTDC_HOD.pdf]");
-  c2->Print("./fig/tcal_HOD.pdf]");
-  c3->Print("./fig/tcal_HOD_res.pdf]");
-
-  fout.close();
+  c3->Print(Form("./fig/tcal_HOD_res_%s.pdf",numbering.Data()));
+  c1->Print(Form("./fig/RawTDC_HOD_%s.pdf]",numbering.Data()));
+  c2->Print(Form("./fig/tcal_HOD_%s.pdf]",numbering.Data()));
+  c3->Print(Form("./fig/tcal_HOD_res_%s.pdf]",numbering.Data()));
+  c4->Print(Form("./fig/tcal_HOD_res_hist_%s.pdf]",numbering.Data()));
+  
+  fout1.close();
+  fout2.close();
 
   
   /* 

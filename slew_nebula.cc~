@@ -1,0 +1,15 @@
+void slew_nebula()
+{
+  TFile *fcut = new TFile("./cut/beamCut.root","r");
+  TCutG *b34na = (TCutG*)fcut->Get("b34na");
+
+  TChain *chain = new TChain("NEBslew","NEBslew");
+  chain->Add("./root/run027[5-9].root.NEBslew");
+  chain->Add("./root/run028[0-9].root.NEBslew");
+  chain->Add("./root/run029[0-4].root.NEBslew");
+
+  
+  chain->SetAlias("trig_neut","coinTrigger==3||coinTrigger==5||coinTrigger==7");
+  //chain->Draw("beamZ:beamAoZ>>h1(400,2.8,3.4,400,6,13)","","colz");
+  chain->Draw("fragZ:fragAoZ>>h1(400,2,3.5,400,3.2,4.6)","b34na&&trig_neut","colz");
+}

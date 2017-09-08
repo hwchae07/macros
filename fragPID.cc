@@ -1,5 +1,4 @@
-
-OB{
+{
 
   TH1 *hodq1 = new TH1D("hodq1","hodq;hodQ",1000,200,550);
   TH1 *hodqsub1 = new TH1D("hodqsub1","hodq;hodQ",1000,200,550);
@@ -22,7 +21,7 @@ OB{
   //  c2->Divide(2,1);
 
   //Int_t runNum = 275;
-    for(Int_t runNum=275 ; runNum<=294 ; runNum++)
+  for(Int_t runNum=275 ; runNum<=294 ; runNum++)
     {
   
       TString filename = Form("run%04d.root",runNum);
@@ -69,22 +68,22 @@ OB{
       //ifstream file1("./dat/hod_offset.dat");
       /*ifstream file1("./dat/hod_offset_brho_scan.dat");
 
-      Int_t dummy[25];
-      Double_t offset[25];
-      for(Int_t i=0;i<=24;i++)
+	Int_t dummy[25];
+	Double_t offset[25];
+	for(Int_t i=0;i<=24;i++)
 	file1>>dummy[i]>>offset[i];
       */
       TString tof_hod = "";
 
       tof_hod += "hodTA-T13";
       /*tof_hod += "+";
-      tof_hod += offset[0];
+	tof_hod += offset[0];
 
-      for(Int_t id=1;id<=24;id++)
+	for(Int_t id=1;id<=24;id++)
 	{
-	  tof_hod += "+";
-	  tof_hod += offset[id];
-	  tof_hod += Form("*(hodID==%d)",id);
+	tof_hod += "+";
+	tof_hod += offset[id];
+	tof_hod += Form("*(hodID==%d)",id);
 	}
       */
       tree->SetAlias("tof_hod",tof_hod);
@@ -176,6 +175,6 @@ OB{
       hsumPID->Add(histPID);
       hsumPID->Draw("colz");
       c2->Update();
-      }
+    }
 
 }

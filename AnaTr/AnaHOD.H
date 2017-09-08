@@ -37,6 +37,8 @@ private:
   Double_t* hodPlaTA;//[24]; // Slw
   Double_t *hodTURaw;
   Double_t *hodTDRaw;
+  Double_t *hodTUCal;
+  Double_t *hodTDCal;
 
   Double_t *hodQURaw;
   Double_t *hodQDRaw;

@@ -64,3 +64,82 @@ test->Gaus(1,1)
 .
 q
 .q
+TMath::Abs(-1)
+TMath::Abs(-1.)
+.q
+.L Parameters.C
+.L Parameters.C
+.L Parameters.C
+.L Parameters.C
+.q
+.L Parameters.C
+loadPar(1,1)
+tdcPar
+.L Parameters.C
+loadPar(1,1)
+.q
+.L Parameters.C
+loadPar(1,1)
+.q
+.L Parameters.C
+loadPar(1,1)
+.q
+.L Parameters.C
+loadPar(1,1)
+.q
+.L Parameters.C
+loadPar(1,1)
+.q
+.L Parameters.C
+.q
+.L Parameters.C
+.q
+.L Parameters.C
+loadPar(1)
+.q
+.L Parameters.C
+.L loadPar.C
+.L loadPar.C+
+.L loadPar.C+
+.L loadPar.C+
+.q
+.L loadPar.C+
+.L loadPar.C+
+.q
+.L loadPar.C+
+.q
+.L loadPar.C+
+.L loadPar.C+
+massMeV(31,10)
+.q
+.L loadPar.C+
+.q
+.L loadPar.C+
+.L loadPar.C
+loadPar(1)
+.L loadPar.C
+.q
+.L loadPar.C
+loadPar(1)
+.q
+.L loadPar.C
+.q
+.L loadPar.C
+loadPar(1)
+loadParU(1)
+.q
+.L loadPar.C
+.q
+.q
+.L loadPar.C
+test()
+.q
+.L loadPar.C
+test()
+.q
+.L loadPar.C
+test()
+.q
+.L loadPar.C
+test()
+.q

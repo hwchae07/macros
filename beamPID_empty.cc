@@ -11,9 +11,8 @@
   fcut->Close();
   
   TChain *chain = new TChain("BeamPID","BeamPID");
-  chain->Add("./root/run027[5-9].root.BeamPID");
-  chain->Add("./root/run028[0-9].root.BeamPID");
-  chain->Add("./root/run029[0-4].root.BeamPID");
+  chain->Add("./root/run029[5-9].root.BeamPID");
+  chain->Add("./root/run030[0-1].root.BeamPID");
 
   TCut cut_reaction = "TMath::Sqrt(tgtX*tgtX + tgtY*tgtY) < 40";
   
@@ -21,6 +20,7 @@
   chain->Draw("beamZ:beamAoZ>>h1(1000,2.8,3.4,1000,6,13)",cut_reaction,"colz");
   h1->SetTitle("Z:A/Z;A/Z;Z");
 
+  
   TCanvas *c2 = new TCanvas("c2","c2",1200,400);
   c2->Divide(2,1);
   c2->cd(1);
