@@ -39,8 +39,13 @@ private:
   Double_t* nebulaQD;//[144]; // Cal
   Double_t* nebulaTU;//[144]; // Slw
   Double_t* nebulaTU1;
+  Double_t* nebulaTU2;
   Double_t* nebulaTD;//[144]; // Slw
+  Double_t* nebulaTD1;
+  Double_t* nebulaTD2;
   Double_t* nebulaTA;//[144]; // Slw
+  Double_t* nebulaTA1;
+  Double_t* nebulaTA2;
   Double_t* nebulaX;//[144];
   Double_t* nebulaY;//[144];
   Double_t* nebulaZ;//[144];
@@ -51,6 +56,7 @@ private:
   Double_t* nebulaQDRaw;
   Double_t* nebulaQUPed;
   Double_t* nebulaQDPed;
+  Double_t* nebulaQPed;
 
 };
 

@@ -16,7 +16,7 @@ void find_peak()
       ofstream fout1(Form("./dat/NEBULA/time_vs_channel_u_id%03d.dat",id));
       ofstream fout2(Form("./dat/NEBULA/time_vs_channel_d_id%03d.dat",id));
       //c1->cd(1);
-      tree->Draw("nebulaTURaw>>ht1(3000,500.5,3500.5)",Form("nebulaID==%d",id),"goff");
+      tree->Draw("nebulaTURaw>>ht1(4500,0.5,4500.5)",Form("nebulaID==%d",id),"goff");
       ht1 = (TH1D*)gDirectory->Get("ht1");
       ht1->SetNameTitle(Form("NEBULA TDC_up ID%d",id),Form("NEBULA TDC_up ID%d",id));
       ht1->GetXaxis()->SetTitle("channel (ch)");
@@ -45,7 +45,7 @@ void find_peak()
 	}
       
       //c1->cd(5);
-      tree->Draw("nebulaTDRaw>>ht2(3000,500.5,3500.5)",Form("nebulaID==%d",id),"goff");
+      tree->Draw("nebulaTDRaw>>ht2(4500,0.5,4500.5)",Form("nebulaID==%d",id),"goff");
       ht2 = (TH1D*)gDirectory->Get("ht2");
       ht2->SetNameTitle(Form("NEBULA TDC_down ID%d",id),Form("NEBULA TDC_down ID%d",id));
       ht2->GetXaxis()->SetTitle("channel (ch)");
@@ -143,12 +143,17 @@ void tdc_fit(int order=1)
       gr1->SetMarkerStyle(24);
       gr1->SetTitle(Form("NEBULA TDC_up ID%d;channel (ch);time (nsec)",id));
       gr1->Draw("AP");
-      fit1 = new TF1("fit1","pol1",500,3500);
+
+      Double_t lrange = peakX1[2]-50;
+      Double_t rrange = peakX1[lineNum1-5]+50;
+
+      fit1 = new TF1("fit1","pol1",lrange,rrange);
       gr1->Fit("fit1","rq");
 
+      
       if(order>=2)
 	{
-	  fit2 = new TF1("fit2","pol2",500,3500);
+	  fit2 = new TF1("fit2","pol2",lrange,rrange);
 	  fit2->SetParameter(0,fit1->GetParameter(0));
 	  fit2->SetParameter(1,fit1->GetParameter(1));
 	  fit2->SetParameter(2,0);
@@ -157,7 +162,7 @@ void tdc_fit(int order=1)
 
       if(order>=3)
 	{
-	  fit3 = new TF1("fit3","pol3",500,3500);
+	  fit3 = new TF1("fit3","pol3",lrange,rrange);
 	  fit3->SetParameter(0,fit2->GetParameter(0));
 	  fit3->SetParameter(1,fit2->GetParameter(1));
 	  fit3->SetParameter(2,fit2->GetParameter(2));
@@ -167,7 +172,7 @@ void tdc_fit(int order=1)
 
       if(order>=4)
 	{
-	  fit4 = new TF1("fit4","pol4",500,3500);
+	  fit4 = new TF1("fit4","pol4",lrange,rrange);
 	  fit4->SetParameter(0,fit3->GetParameter(0));
 	  fit4->SetParameter(1,fit3->GetParameter(1));
 	  fit4->SetParameter(2,fit3->GetParameter(2));
@@ -178,7 +183,7 @@ void tdc_fit(int order=1)
 
       if(order>=5)
 	{
-	  fit5 = new TF1("fit5","pol5",500,3500);
+	  fit5 = new TF1("fit5","pol5",lrange,rrange);
 	  fit5->SetParameter(0,fit4->GetParameter(0));
 	  fit5->SetParameter(1,fit4->GetParameter(1));
 	  fit5->SetParameter(2,fit4->GetParameter(2));
@@ -190,7 +195,7 @@ void tdc_fit(int order=1)
 
       if(order>=6)
 	{
-	  fit6 = new TF1("fit6","pol6",500,3500);
+	  fit6 = new TF1("fit6","pol6",lrange,rrange);
 	  fit6->SetParameter(0,fit5->GetParameter(0));
 	  fit6->SetParameter(1,fit5->GetParameter(1));
 	  fit6->SetParameter(2,fit5->GetParameter(2));
@@ -222,7 +227,7 @@ void tdc_fit(int order=1)
       
       c1->cd(2);
       hres1 = new TH1D("hres1","hres1",15,-0.1,0.1);
-      for(Int_t i=0;i<lineNum1;i++)
+      for(Int_t i=2;i<lineNum1-5;i++)
 	{
 	  //cout<<time1[i]<<" "<<func_fit->Eval(peakX1[i])<<endl;
 	  res1[i] = time1[i] - func_fit->Eval(peakX1[i]);
@@ -261,13 +266,15 @@ void tdc_fit(int order=1)
       gr2->SetMarkerStyle(24);
       gr2->SetTitle(Form("NEBULA TDC_down ID%d;channel (ch);time (nsec)",id));
       gr2->Draw("AP");
-      fit1 = new TF1("fit1","pol1",500,3500);
+      Double_t lrange2 = peakX2[2]-50;
+      Double_t rrange2 = peakX2[lineNum2-5]+50;
+      fit1 = new TF1("fit1","pol1",lrange2,rrange2);
       gr2->Fit("fit1","rq");
 
 
       if(order>=2)
 	{
-	  fit2 = new TF1("fit2","pol2",500,3500);
+	  fit2 = new TF1("fit2","pol2",lrange2,rrange2);
 	  fit2->SetParameter(0,fit1->GetParameter(0));
 	  fit2->SetParameter(1,fit1->GetParameter(1));
 	  fit2->SetParameter(2,0);
@@ -276,7 +283,7 @@ void tdc_fit(int order=1)
 
       if(order>=3)
 	{
-	  fit3 = new TF1("fit3","pol3",500,3500);
+	  fit3 = new TF1("fit3","pol3",lrange2,rrange2);
 	  fit3->SetParameter(0,fit2->GetParameter(0));
 	  fit3->SetParameter(1,fit2->GetParameter(1));
 	  fit3->SetParameter(2,fit2->GetParameter(2));
@@ -286,7 +293,7 @@ void tdc_fit(int order=1)
 
       if(order>=4)
 	{
-	  fit4 = new TF1("fit4","pol4",500,3500);
+	  fit4 = new TF1("fit4","pol4",lrange2,rrange2);
 	  fit4->SetParameter(0,fit3->GetParameter(0));
 	  fit4->SetParameter(1,fit3->GetParameter(1));
 	  fit4->SetParameter(2,fit3->GetParameter(2));
@@ -297,7 +304,7 @@ void tdc_fit(int order=1)
 
       if(order>=5)
 	{
-	  fit5 = new TF1("fit5","pol5",500,3500);
+	  fit5 = new TF1("fit5","pol5",lrange2,rrange2);
 	  fit5->SetParameter(0,fit4->GetParameter(0));
 	  fit5->SetParameter(1,fit4->GetParameter(1));
 	  fit5->SetParameter(2,fit4->GetParameter(2));
@@ -309,7 +316,7 @@ void tdc_fit(int order=1)
 
       if(order>=6)
 	{
-	  fit6 = new TF1("fit6","pol6",500,3500);
+	  fit6 = new TF1("fit6","pol6",lrange2,rrange2);
 	  fit6->SetParameter(0,fit5->GetParameter(0));
 	  fit6->SetParameter(1,fit5->GetParameter(1));
 	  fit6->SetParameter(2,fit5->GetParameter(2));
@@ -345,7 +352,8 @@ void tdc_fit(int order=1)
 
       c1->cd(5);
       hres2 = new TH1D("hres2","hres2",15,-0.1,0.1);
-      for(Int_t i=0;i<lineNum2;i++)
+
+      for(Int_t i=2;i<lineNum2-5;i++)
 	{
 	  //cout<<time2[i]<<" "<<func_fit->Eval(peakX2[i])<<endl;
 	  res2[i] = time2[i] - func_fit->Eval(peakX2[i]);
@@ -396,9 +404,16 @@ void tdc_fit(int order=1)
   c2->Print(Form("./fig/tcal_NEBULA_res_%s.pdf]",numbering.Data()));
   
 
-  //delete [] peakX1, index1, ch1, time1, res1;
-  //delete [] peakX2, index2, ch2, time2, res2;
-
+  /*
+    delete fit1;
+    delete fit2;
+    delete fit3;
+    delete fit4;
+    delete fit5;
+    delete fit6;
+    delete func_fit;
+  */
+  
   fout1.close();
   fout2.close();
 }
