@@ -1,0 +1,153 @@
+#include <iostream>
+#include <fstream>
+
+#include "AnaNEBULA.H"
+
+#include "TTree.h"
+#include "TMath.h"
+
+AnaNEBULA::AnaNEBULA():
+  AnaModule("NEBULA"),
+  fNEBULAParameters(NULL),
+  fCalibNEBULA(NULL) {
+  nebulaNum = 0;
+  nebulaID = new Int_t[144];
+  nebulaQU = new Double_t[144];
+  nebulaQD = new Double_t[144];
+  nebulaTU = new Double_t[144];
+  nebulaTD = new Double_t[144];
+  nebulaTA = new Double_t[144];
+  nebulaX = new Double_t[144];
+  nebulaY = new Double_t[144];
+  nebulaZ = new Double_t[144];
+  nebulaTURaw = new Double_t[144];
+  nebulaTDRaw = new Double_t[144];
+  
+  nebulaQURaw = new Double_t[144];
+  nebulaQDRaw = new Double_t[144];
+
+
+  
+  //tofOffset = new Double_t[144];
+}
+
+AnaNEBULA::~AnaNEBULA(){    
+  DeleteAll();
+  delete nebulaID;
+  delete nebulaQU;
+  delete nebulaQD;
+  delete nebulaTU;
+  delete nebulaTD;
+  delete nebulaTA;
+  delete nebulaX;
+  delete nebulaY;
+  delete nebulaZ;
+  //delete tofOffset;
+  delete nebulaTURaw;
+  delete nebulaTDRaw;
+  
+  delete nebulaQURaw;
+  delete nebulaQDRaw;
+  //delete nebulaT;
+}
+
+void AnaNEBULA::InitParameter(){
+  fNEBULAParameters = TArtSAMURAIParameters::Instance();
+  fNEBULAParameters->LoadParameter((char*)"db/NEBULA.xml");
+  /*
+  std::ifstream tof("data/nebula_tof_offset.dat");
+  Double_t temp;
+  for (Int_t i = 0 ; i < 144 ; i++)
+    tof >> tofOffset[i] >> temp;
+  
+  tof.close();
+  */
+  parLoaded = true;}
+
+void AnaNEBULA::InitDetector(){
+  if (!parLoaded) return;
+  fCalibNEBULA = new TArtCalibNEBULA;
+  detLoaded = true;}
+
+void AnaNEBULA::Analysis(){
+  if (!detLoaded) return;
+  anaFlag = true;
+
+  fCalibNEBULA->ClearData();
+  fCalibNEBULA->ReconstructData();
+
+  nebulaNum = 0;
+  for (Int_t i = 0 ; i < 6 ; i++)
+    nebulaMult[i] = 0;
+
+  std::ifstream fin("../../dat/nebula_gamma_offset.dat");
+  Double_t nebula_offset[120]={0,};
+  for(Int_t i=0;i<120;i++)
+    fin>>nebula_offset[i];
+  fin.close();
+  
+  for (Int_t i = 0 ; i < fCalibNEBULA->GetNumNEBULAPla() ; i++){
+    TArtNEBULAPla* pla = fCalibNEBULA->GetNEBULAPla(i);
+    if (pla->GetHit()){
+      nebulaID[nebulaNum] = pla->GetID();
+      if (nebulaID[nebulaNum] < 121)
+	nebulaMult[(nebulaID[nebulaNum]-1)/30]++;
+      else if (nebulaID[nebulaNum] < 145)
+	nebulaMult[(nebulaID[nebulaNum]-121)/12+4]++;
+      else
+	continue;
+      nebulaQU[nebulaNum] = pla->GetQUCal();
+      nebulaQD[nebulaNum] = pla->GetQDCal();
+      nebulaTU[nebulaNum] = pla->GetTUSlw() - nebula_offset[nebulaID[nebulaNum]-1];
+      nebulaTD[nebulaNum] = pla->GetTDSlw() - nebula_offset[nebulaID[nebulaNum]-1];
+      nebulaTA[nebulaNum] = pla->GetTAveSlw() - nebula_offset[nebulaID[nebulaNum]-1];
+      //      std::cout<<nebula_offset[nebulaID[nebulaNum]]<<std::endl;
+      nebulaX[nebulaNum] = pla->GetPos(0);
+      nebulaY[nebulaNum] = pla->GetPos(1);
+      nebulaZ[nebulaNum] = pla->GetPos(2);
+      nebulaTURaw[nebulaNum] = pla->GetTURaw();
+      nebulaTDRaw[nebulaNum] = pla->GetTDRaw();
+      nebulaQURaw[nebulaNum] = pla->GetQURaw();
+      nebulaQDRaw[nebulaNum] = pla->GetQDRaw();
+      /*
+      nebulaT[nebulaNum] = nebulaTA[nebulaNum] - nebula_offset[nebulaID[nebulaNum]];
+      Double_t temp = TMath::Power(nebulaX[nebulaNum],2);
+      temp += TMath::Power(nebulaY[nebulaNum],2);
+      temp += TMath::Power(nebulaZ[nebulaNum],2);
+      nebulaT[nebulaNum] += TMath::Sqrt(temp)/299.792;
+      */
+      nebulaNum++;
+      }
+  }
+  if (nebulaNum < 1)
+    anaFlag = false; 
+}
+
+void AnaNEBULA::DeleteAll(){
+  if (fCalibNEBULA)    delete fCalibNEBULA;
+}
+
+void AnaNEBULA::SetTree(){ 
+  AnaModule::SetTree(); 
+  tree->Branch("nebulaNum",&nebulaNum,"nebulaNum/I");
+  tree->Branch("nebulaMult",nebulaMult,"nebulaMult[6]/I");
+  tree->Branch("nebulaID",nebulaID,"nebulaID[nebulaNum]/I");
+
+  tree->Branch("nebulaQU",nebulaQU,"nebulaQU[nebulaNum]/D");
+  tree->Branch("nebulaQD",nebulaQD,"nebulaQD[nebulaNum]/D");
+  tree->Branch("nebulaTU",nebulaTU,"nebulaTU[nebulaNum]/D");
+  tree->Branch("nebulaTD",nebulaTD,"nebulaTD[nebulaNum]/D");  
+  tree->Branch("nebulaTA",nebulaTA,"nebulaTA[nebulaNum]/D");
+  tree->Branch("nebulaX",nebulaX,"nebulaX[nebulaNum]/D");
+  tree->Branch("nebulaY",nebulaY,"nebulaY[nebulaNum]/D");
+  tree->Branch("nebulaZ",nebulaZ,"nebulaZ[nebulaNum]/D");
+  tree->Branch("nebulaTURaw",nebulaTURaw,"nebulaTURaw[nebulaNum]/D");
+  tree->Branch("nebulaTDRaw",nebulaTDRaw,"nebulaTDRaw[nebulaNum]/D");
+
+  tree->Branch("nebulaQURaw",nebulaQURaw,"nebulaQURaw[nebulaNum]/D");
+  tree->Branch("nebulaQDRaw",nebulaQDRaw,"nebulaQDRaw[nebulaNum]/D");
+  
+
+  
+  tree->SetAlias("nebulaQA","sqrt(nebulaQU*nebulaQD)");
+}

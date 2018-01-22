@@ -1,0 +1,4 @@
+{
+  TChain *chain = new TChain("NeuLAND","NeuLAND");
+  chain->Add("./root/run031[6-8].root");
+}

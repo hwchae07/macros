@@ -1,0 +1,89 @@
+
+void make2Dqdc()
+{
+  TChain *chain = new TChain("NEBULA","NEBULA");
+  chain->Add("./root/nebula003[6-8].root.NEBULA");
+  TH2 *hist_qu = new TH2D("hist_qu","hist_qu",120,0.5,120.5,2000,0,4000);
+  TH2 *hist_qd = new TH2D("hist_qd","hist_qd",120,0.5,120.5,2000,0,4000);
+
+  chain->Draw("nebulaQUPed:nebulaID>>hist_qu","","goff");
+  hist_qu = (TH2D*)gDirectory->Get("hist_qu");
+  chain->Draw("nebulaQDPed:nebulaID>>hist_qd","","goff");
+  hist_qd = (TH2D*)gDirectory->Get("hist_qd");
+
+  TFile *file = new TFile("./hist/qdc_nebula.root","recreate");
+  hist_qu->Write();
+  hist_qd->Write();
+  file->Close();
+  
+}
+
+
+void findPeak()
+{
+
+  TFile *file = new TFile("./hist/qdc_nebula.root","r");
+
+  TH2 *hist_qu = (TH2D*)file->Get("hist_qu");
+  TH2 *hist_qd = (TH2D*)file->Get("hist_qd");
+
+  
+  TH1 *h1;
+  TH1 *h2;
+  TF1 *f1;
+  TF1 *f2;
+  
+  TF1 *cos_peak = new TF1("cos_peak","landau(0)+expo(3)");
+  TF1 *cos_landau = new TF1("cos_landau","landau",0,4000);
+
+  double fit_down = 400;
+  double fit_up   = 2000; 
+
+  TCanvas *c1 = new TCanvas("c1","c1",1200,600);
+  c1->Divide(2,1);
+
+  ofstream fout1("./dat/nebula_cosmic_peak_u.dat");
+  ofstream fout2("./dat/nebula_cosmic_peak_d.dat");
+
+  c1->Print("./fig/qdc_nebula.pdf[");
+  
+  //int id = 1;
+
+  for(int id = 1; id<=120; id++)
+    {
+  
+      c1->cd(1);
+      h1 = hist_qu->ProjectionY(Form("qu%d",id),id,id);
+      h1->SetTitle(Form("QDC ID%d Up;Q_{Ped} (channel)",id));
+      h1->GetXaxis()->SetRangeUser(0,fit_up);
+      h1->Fit("landau","q","",fit_down,fit_up);
+      f1 = h1->GetFunction("landau");
+      cos_peak->SetParameters(f1->GetParameters());
+      cos_peak->SetParameter(3,5);
+      cos_peak->SetParameter(4,-2E-2);
+      h1->Fit(cos_peak,"q","",fit_down,fit_up);
+      fout1<<cos_peak->GetParameter(1)<<" "<<cos_peak->GetParameter(2)<<endl;
+  
+      c1->cd(2);
+      h2 = hist_qd->ProjectionY(Form("qd%d",id),id,id);
+      h2->SetTitle(Form("QDC ID%d Down;Q_{Ped} (channel)",id));
+      h2->GetXaxis()->SetRangeUser(0,fit_up);
+      h2->Fit("landau","q","",fit_down,fit_up);
+      f2 = h2->GetFunction("landau");
+      cos_peak->SetParameters(f2->GetParameters());
+      cos_peak->SetParameter(3,5);
+      cos_peak->SetParameter(4,-2E-2);
+      h2->Fit(cos_peak,"q","",fit_down,fit_up);
+      fout2<<cos_peak->GetParameter(1)<<" "<<cos_peak->GetParameter(2)<<endl;
+  
+      c1->Print("./fig/qdc_nebula.pdf");
+
+      cout<<"ID"<<id<<"is ongoing..."<<endl;
+
+    }
+
+  c1->Print("./fig/qdc_nebula.pdf]");
+  fout1.close();
+  fout2.close();
+ 
+}

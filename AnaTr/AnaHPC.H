@@ -1,0 +1,71 @@
+#ifndef ANAHPC_H
+#define ANAHPC_H
+
+#include "AnaModule.H"
+
+#include "TArtSAMURAIParameters.hh"
+#include "TArtCalibNEBULA.hh"
+#include "TArtCalibNEBULAHPC.hh"
+
+class AnaHPC : public AnaModule {
+
+public:
+
+  AnaHPC();
+  virtual ~AnaHPC();
+
+  void InitParameter();
+  void InitDetector();
+  void Analysis();
+
+  void SetTree();
+
+  void DeleteAll();
+
+private:
+
+  TArtSAMURAIParameters* fNEBULAParameters;
+
+  TArtCalibNEBULA* fCalibNEBULA;
+  TArtCalibNEBULAHPC* fCalibNEBULAHPC;
+
+  // for parameters
+  //Double_t* tofOffset;
+  double **parTU;
+  double **parTD;
+
+  // for trees
+  Int_t nebulaNum;
+  Int_t nebulaMult[6];
+  Int_t* nebulaID;//[144];
+  Double_t* nebulaQU;//[144]; // Cal
+  Double_t* nebulaQD;//[144]; // Cal
+  Double_t* nebulaTU;//[144]; // Slw
+  Double_t* nebulaTD;//[144]; // Slw
+  Double_t* nebulaTA;//[144]; // Slw
+  Double_t* nebulaX;//[144];
+  Double_t* nebulaY;//[144];
+  Double_t* nebulaZ;//[144];
+
+  Double_t* nebulaTURaw;
+  Double_t* nebulaTDRaw;
+  Double_t* nebulaQURaw;
+  Double_t* nebulaQDRaw;
+
+  Double_t* nebulaY2;
+
+  Double_t* nebulaDT;
+  Double_t* nebulaDTS;
+
+  Double_t* nebulaQUPed;
+  Double_t* nebulaQDPed;
+  Double_t* nebulaQPed;
+
+  Double_t* nebulaQA;
+
+  Int_t hpcNum;
+  Int_t* hpcID;
+
+};
+
+#endif

@@ -1,0 +1,6 @@
+{
+  TFile *file = new TFile("./root/run0303.root.NEBULA","r");
+  TTree *tree = (TTree*)file->Get("NEBULA");
+
+  tree->Draw("nebulaTU","nebulaTRaw>500&&nebulaTRaw<3500");
+}

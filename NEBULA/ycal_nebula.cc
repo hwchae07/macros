@@ -1,0 +1,564 @@
+#include "TH1.h"
+#include "TH2.h"
+#include "TCanvas.h"
+#include "TTree.h"
+#include "TChain.h"
+
+
+TH2* mk2d(int hpc_id1, int hpc_id2);
+TH2* mk2d2(int hpc_id1, int hpc_id2);
+
+void printY(int layer = 1)
+{
+  //9547.3-405
+  //9547.3+405
+  //10401.8-405
+  //10401.8+405
+
+  Double_t hpcPos[16][3] = {0,};
+  hpcPos[1][1] =    870;  hpcPos[1][2] = 9142.3;
+  hpcPos[2][1] =    470;  hpcPos[2][2] = 9142.3;
+  hpcPos[3][1] =   82.5;  hpcPos[3][2] = 9142.3;
+  hpcPos[4][1] = -327.5;  hpcPos[4][2] = 9142.3;
+
+  hpcPos[5][1] =  600;  hpcPos[5][2] = 9952.3;
+  hpcPos[6][1] =  200;  hpcPos[6][2] = 9952.3;
+  hpcPos[7][1] = -205;  hpcPos[7][2] = 9952.3;
+  hpcPos[8][1] = -915;  hpcPos[8][2] = 9952.3;
+
+  hpcPos[9][1]  =   870;  hpcPos[9][2]  = 9996.8;
+  hpcPos[10][1] =   470;  hpcPos[10][2] = 9996.8;
+  hpcPos[11][1] =  77.5;  hpcPos[11][2] = 9996.8; // no data //
+  hpcPos[12][1] =  -330;  hpcPos[12][2] = 9996.8;
+
+  hpcPos[13][1] =  597.5;  hpcPos[13][2] = 10806.8;
+  hpcPos[14][1] =  197.5;  hpcPos[14][2] = 10806.8;
+  hpcPos[15][1] = -202.5;  hpcPos[15][2] = 10806.8;
+
+
+  double nebulaZ1 = 9547.3  - 66.;
+  double nebulaZ2 = 9547.3  + 66.;
+  double nebulaZ3 = 10401.8 - 66.;
+  double nebulaZ4 = 10401.8 + 66.;
+  double nebulaZ;
+
+  if(layer == 1)
+    nebulaZ = nebulaZ1;
+  else if(layer == 2)
+    nebulaZ = nebulaZ2;
+  else if(layer == 3)
+    nebulaZ = nebulaZ3;
+  else if(layer == 4)
+    nebulaZ = nebulaZ4;
+
+  for(int hpc_id1=1; hpc_id1<=4; hpc_id1++)
+    {
+      for(int hpc_id2=5 ; hpc_id2<=8; hpc_id2++)
+	{
+	  double ypos = ( (nebulaZ - hpcPos[hpc_id1][2]) / (hpcPos[hpc_id2][2] - hpcPos[hpc_id1][2]) * (hpcPos[hpc_id2][1] - hpcPos[hpc_id1][1]) + hpcPos[hpc_id1][1]) ;
+	  cout<<setw(8)<<hpc_id1<<" "<<setw(8)<<hpc_id2<<" "<<setw(8)<<ypos<<endl;
+	}
+    }
+}
+
+
+void ycal_nebula(int nebula_id=15)
+{
+
+  Double_t hpcPos[16][3] = {0,};
+
+  //9547.3-405
+  //9547.3+405
+  //10401.8-405
+  //10401.8+405
+
+  hpcPos[1][1] =    870;  hpcPos[1][2] = 9142.3;
+  hpcPos[2][1] =    470;  hpcPos[2][2] = 9142.3;
+  hpcPos[3][1] =   82.5;  hpcPos[3][2] = 9142.3;
+  hpcPos[4][1] = -327.5;  hpcPos[4][2] = 9142.3;
+
+  hpcPos[5][1] =  600;  hpcPos[5][2] = 9952.3;
+  hpcPos[6][1] =  200;  hpcPos[6][2] = 9952.3;
+  hpcPos[7][1] = -205;  hpcPos[7][2] = 9952.3;
+  hpcPos[8][1] = -915;  hpcPos[8][2] = 9952.3;
+
+  hpcPos[9][1]  =   870;  hpcPos[9][2]  = 9996.8;
+  hpcPos[10][1] =   470;  hpcPos[10][2] = 9996.8;
+  hpcPos[11][1] =  77.5;  hpcPos[11][2] = 9996.8; // no data //
+  hpcPos[12][1] =  -330;  hpcPos[12][2] = 9996.8;
+
+  hpcPos[13][1] =  597.5;  hpcPos[13][2] = 10806.8;
+  hpcPos[14][1] =  197.5;  hpcPos[14][2] = 10806.8;
+  hpcPos[15][1] = -202.5;  hpcPos[15][2] = 10806.8;
+
+
+  // 1 : 1 & 5
+  // 2 : 1 & 6
+  // 3 : 1 & 7
+  // 4 : 1 & 8
+
+
+
+
+  TFile *file = new TFile("./hist/hpc_run.root","r");
+
+  TH2 *h1;
+  TH1 *h1d;
+
+
+  std::vector<double> ypos;
+  std::vector<double> dTerr;
+  std::vector<double> dT;
+  TF1 *fit1;
+  TF1 *fit2;
+  TF1 *fit3;
+  TF1 *fit11;
+
+  ofstream fout("./dat/ycal_nebula.dat");
+
+  TCanvas *c1 = new TCanvas("c1","c1",600,600);
+  TCanvas *c2 = new TCanvas("c2","c2",600,600);
+
+  c1->Print("./fig/ycal1_nebula.pdf[");
+  c2->Print("./fig/ycal2_nebula.pdf[");
+
+  for(nebula_id = 1 ; nebula_id <= 120 ; nebula_id+=1)
+    {
+      cout<<"NEBULA ID"<<nebula_id<<" start..."<<endl;
+      c1 = new TCanvas(Form("c1ID%d",nebula_id),Form("c1ID%d",nebula_id),900,900);
+      c1->Divide(4,4);
+
+      // NEBULA layer z position
+      double nebulaZ1 = 9547.3  - 66;
+      double nebulaZ2 = 9547.3  + 66;
+      double nebulaZ3 = 10401.8 - 66;
+      double nebulaZ4 = 10401.8 + 66;
+      double nebulaZ;
+
+      if(nebula_id <= 30)
+	nebulaZ = nebulaZ1;
+      else if(nebula_id<=60)
+	nebulaZ = nebulaZ2;
+      else if(nebula_id<=90)
+	nebulaZ = nebulaZ3;
+      else if(nebula_id<=120)
+	nebulaZ = nebulaZ4;
+
+
+
+      for(int hpc1=1; hpc1<=4; hpc1++)
+	{
+	  for(int hpc2=5; hpc2<=8; hpc2++)
+	    {
+
+
+	      int canvas_id = (hpc1-1)*4 + (hpc2-4);
+
+	      c1->cd(canvas_id);
+
+	      int hpc_id1 = hpc1;
+	      int hpc_id2 = hpc2;
+
+	      if(nebula_id>60)
+		{
+		  hpc_id1 = hpc1+8;
+		  hpc_id2 = hpc2+8;
+		}
+
+	      if(hpc_id2 == 16)
+		continue;
+
+
+	      //cout<<hpc_id1<<" "<<hpc_id2<<endl;
+	      h1 = (TH2D*)file->Get(Form("hpc_%02d_%02d",hpc_id1,hpc_id2));
+	      //h1 = (TH2D*)file->Get(Form("hpc2_%02d_%02d",hpc_id1,hpc_id2));
+
+	      h1d = h1->ProjectionY(Form("ID%d_HPC%02d_%02d",nebula_id,hpc_id1,hpc_id2),nebula_id,nebula_id);
+	      h1d->SetTitle(Form("ID%d;T_{Up} - T_{Down}",nebula_id));
+	      h1d->Rebin(4);
+
+	      double center = h1d->GetBinCenter(h1d->GetMaximumBin());
+	      double left = h1d->GetBinCenter(h1d->FindFirstBinAbove());
+	      double right = h1d->GetBinCenter(h1d->FindLastBinAbove());
+	      h1d->GetXaxis()->SetRangeUser(left-5, right+5);
+
+	      h1d->Fit("gaus","rq","",center-3,center+3);
+	      fit1 = (TF1*)h1d->GetFunction("gaus");
+	      fit1->SetLineColor(1);
+	      fit1->SetLineWidth(2);
+	      double range1 = fit1->GetParameter(1) - 2*fit1->GetParameter(2);
+	      double range2 = fit1->GetParameter(1) + 2*fit1->GetParameter(2);
+
+	      fit2 = new TF1("fit2","gaus");
+	      fit2->SetParameters(fit1->GetParameters());
+	      h1d->Fit("fit2","rq","",range1,range2);
+
+
+	      h1d->Draw();
+	      c1->Update();
+
+	      //tanaka's pair
+	      /*
+		if( (hpc1==1 && hpc2==7) || (hpc1==1 && hpc2==8) || (hpc1==2 && hpc2==5) || (hpc1==2 && hpc2==8) || (hpc1==3 && hpc2==6) || (hpc1==4 && hpc2==5) || (hpc1==4 && hpc2==7))
+		{
+		h1d->Fit("fit2","rq0","goff",range1,range2);
+		continue;
+		}
+	      */
+	      //tanaka's pair
+
+
+	      if( (hpc1==3 && hpc2==7) || (hpc1==4 && hpc2==7) )
+		{
+		  h1d->Fit("fit2","rq0","goff",range1,range2);
+		  continue;
+		}
+
+	      if(fit2->GetParameter(2)>3)
+		{
+		  h1d->Fit("fit2","rq0","goff",range1,range2);
+		  continue;
+		}
+
+
+	      ypos.push_back( (nebulaZ - hpcPos[hpc_id1][2]) / (hpcPos[hpc_id2][2] - hpcPos[hpc_id1][2]) * (hpcPos[hpc_id2][1] - hpcPos[hpc_id1][1]) + hpcPos[hpc_id1][1]) ;
+	      dT.push_back( -h1d->GetBinCenter(h1d->GetMaximumBin()) );
+	      double err_dummy = fit2->GetParameter(2) / TMath::Sqrt(h1d->GetEntries());
+	      err_dummy = fit2->GetParameter(2);
+	      dTerr.push_back( err_dummy );
+
+	      /*
+		cout<<setw(6)<<hpcPos[hpc_id1][1]<<" "<<setw(6)<<hpcPos[hpc_id2][1]<<" ";
+		cout<<setw(6)<<nebulaZ<<" ";
+		cout<<setw(6)<<hpcPos[hpc_id1][2]<<" "<<setw(6)<<hpcPos[hpc_id2][2]<<" ";
+		cout<<setw(4)<<hpc_id1<<" "<<setw(4)<<hpc_id2<<" "<<setw(7)<<dT.back()<<" "<<setw(8)<<ypos.back()<<endl;
+	      */
+	      //cout<<fit2->GetParameter(2)<<endl;
+	    }
+	  //getchar();
+
+	}
+
+      c2 = new TCanvas(Form("c2ID%d",nebula_id),Form("c2ID%d",nebula_id),600,600);
+      TGraphErrors *gr1 = new TGraphErrors(ypos.size(),&(dT[0]),&(ypos[0]),&(dTerr[0]));
+      gr1->SetMarkerStyle(20);
+      gr1->SetName(Form("ID%d",nebula_id));
+      gr1->SetTitle(Form("ID%d;T_{Down} - T_{Up};Y_{NEBULA}",nebula_id));
+      gr1->Draw("AP");
+      gr1->Fit("pol1","q");
+      fit11 = (TF1*)gr1->GetFunction("pol1");
+      fout<<setw(8)<<fit11->GetParameter(0)<<" "<<setw(8)<<fit11->GetParameter(1)<<endl;
+
+      c2->Update();
+      cout<<"NEBULA ID"<<nebula_id<<" done..."<<endl;
+
+
+      //getchar();
+
+      c1->Print("./fig/ycal1_nebula.pdf");
+      c2->Print("./fig/ycal2_nebula.pdf");
+
+      c1->Close();
+      c2->Close();
+
+
+      ypos.clear();
+      dT.clear();
+      dTerr.clear();
+
+
+    }
+  c1->Print("./fig/ycal1_nebula.pdf]");
+  c2->Print("./fig/ycal2_nebula.pdf]");
+
+  fout.close();
+
+}
+
+void save_hist()
+{
+  TFile *file = new TFile("./hist/hpc_run.root","recreate");
+  TH2 *h1;
+  TH2 *h2;
+
+  for(int i=1 ; i<=4 ; i++)
+    {
+      for(int j=5 ; j<=8 ; j++)
+	{
+	  cout<<"HPC"<<i<<" and HPC"<<j<<" start."<<endl;
+
+	  h1 = mk2d(i,j);
+	  h1->SetName(Form("hpc_%02d_%02d",i,j));
+	  h2 = mk2d2(i,j);
+	  h2->SetName(Form("hpc2_%02d_%02d",i,j));
+
+	  cout<<"HPC"<<i<<" and HPC"<<j<<" done."<<endl;
+	}
+    }
+
+  for(int i=9 ; i<=12 ; i++)
+    {
+      for(int j=13 ; j<=16 ; j++)
+	{
+	  cout<<"HPC"<<i<<" and HPC"<<j<<" start."<<endl;
+
+	  h1 = mk2d(i,j);
+	  h1->SetName(Form("hpc_%02d_%02d",i,j));
+	  h2 = mk2d2(i,j);
+	  h2->SetName(Form("hpc2_%02d_%02d",i,j));
+
+	  cout<<"HPC"<<i<<" and HPC"<<j<<" done."<<endl;
+	}
+    }
+
+
+  file->Write();
+  file->Close();
+
+}
+
+TH2* mk2d(int hpc_id1 = 1, int hpc_id2 = 5)
+{
+  TChain *tree = new TChain("HPC","HPC");
+  tree->Add("./root/nebula003[6-8].root.HPC");
+
+  int hpcNum;
+  int* hpcID = new int[144];
+  int nebulaNum;
+  int* nebulaID = new int[144];
+  double* nebulaDTS = new double[144];
+  double* nebulaQA = new double[144];
+
+  tree->SetBranchAddress("nebulaNum",&nebulaNum);
+  tree->SetBranchAddress("nebulaID",nebulaID);
+  tree->SetBranchAddress("nebulaDTS",nebulaDTS);
+  tree->SetBranchAddress("nebulaQA",nebulaQA);
+
+  tree->SetBranchAddress("hpcNum",&hpcNum);
+  tree->SetBranchAddress("hpcID",hpcID);
+
+  //  TH1 *h1 = new TH1D("h1","h1",100,-25,25);
+
+  TH2 *h1 = new TH2D("h1","h1",120,0.5,120.5,400,-50,50);
+
+  for(int i=0; i<tree->GetEntries() ; i++)
+    {
+      tree->GetEntry(i);
+
+      for(int j=0 ; j<hpcNum ; j++)
+	{
+	  if(hpcID[j] == hpc_id1)
+	    {
+
+	      for(int k=0 ; k<hpcNum ; k++)
+		{
+		  if(hpcID[k] == hpc_id2)
+		    {
+
+		      for(int l=0 ; l<nebulaNum ; l++)
+			{
+			  if(nebulaQA[l] > 20 && nebulaQA[l] < 40)
+			    h1->Fill(nebulaID[l],nebulaDTS[l]);
+			}
+		    }
+		  else
+		    continue;
+		}
+
+	    }
+	  else
+	    continue;
+	}
+    }
+
+
+
+  delete [] hpcID;
+  delete [] nebulaID;
+  delete [] nebulaDTS;
+  delete [] nebulaQA;
+
+  return h1;
+}
+
+
+TH2* mk2d2(int hpc_id1 = 1, int hpc_id2 = 5)
+{
+  TChain *tree = new TChain("HPC","HPC");
+  tree->Add("./root/nebula003[6-8].root.HPC");
+
+  int hpcNum;
+  int* hpcID = new int[144];
+  int nebulaNum;
+  int* nebulaID = new int[144];
+  double* nebulaDTS = new double[144];
+  double* nebulaQA = new double[144];
+
+  tree->SetBranchAddress("nebulaNum",&nebulaNum);
+  tree->SetBranchAddress("nebulaID",nebulaID);
+  tree->SetBranchAddress("nebulaDTS",nebulaDTS);
+  tree->SetBranchAddress("nebulaQA",nebulaQA);
+
+  tree->SetBranchAddress("hpcNum",&hpcNum);
+  tree->SetBranchAddress("hpcID",hpcID);
+
+  //  TH1 *h1 = new TH1D("h1","h1",100,-25,25);
+
+  TH2 *h1 = new TH2D("h1","h1",120,0.5,120.5,400,-50,50);
+
+  for(int i=0; i<tree->GetEntries() ; i++)
+    {
+      tree->GetEntry(i);
+
+      for(int j=0 ; j<hpcNum ; j++)
+	{
+	  if(hpcID[j] == hpc_id1)
+	    {
+
+	      for(int k=0 ; k<hpcNum ; k++)
+		{
+		  if(hpcID[k] == hpc_id2)
+		    {
+
+		      for(int l=0 ; l<nebulaNum ; l++)
+			{
+			  if(nebulaQA[l] > 20 && nebulaQA[l] < 40)
+			    h1->Fill(nebulaID[l],nebulaDTS[l]);
+			}
+		    }
+		  else
+		    continue;
+		}
+
+	    }
+	  else
+	    continue;
+	}
+    }
+
+
+
+  delete [] hpcID;
+  delete [] nebulaID;
+  delete [] nebulaDTS;
+  delete [] nebulaQA;
+
+  return h1;
+}
+
+double GetY(int nebID,int hpc_id1, int hpc_id2)
+{
+  Double_t hpcPos[16][3] = {0,};
+  hpcPos[1][1] =    870;  hpcPos[1][2] = 9142.3;
+  hpcPos[2][1] =    470;  hpcPos[2][2] = 9142.3;
+  hpcPos[3][1] =   82.5;  hpcPos[3][2] = 9142.3;
+  hpcPos[4][1] = -327.5;  hpcPos[4][2] = 9142.3;
+
+  hpcPos[5][1] =  600;  hpcPos[5][2] = 9952.3;
+  hpcPos[6][1] =  200;  hpcPos[6][2] = 9952.3;
+  hpcPos[7][1] = -205;  hpcPos[7][2] = 9952.3;
+  hpcPos[8][1] = -915;  hpcPos[8][2] = 9952.3;
+
+  hpcPos[9][1]  =   870;  hpcPos[9][2]  = 9996.8;
+  hpcPos[10][1] =   470;  hpcPos[10][2] = 9996.8;
+  hpcPos[11][1] =  77.5;  hpcPos[11][2] = 9996.8; // no data //
+  hpcPos[12][1] =  -330;  hpcPos[12][2] = 9996.8;
+
+  hpcPos[13][1] =  597.5;  hpcPos[13][2] = 10806.8;
+  hpcPos[14][1] =  197.5;  hpcPos[14][2] = 10806.8;
+  hpcPos[15][1] = -202.5;  hpcPos[15][2] = 10806.8;
+
+
+  double nebulaZ1 = 9547.3  - 66.;
+  double nebulaZ2 = 9547.3  + 66.;
+  double nebulaZ3 = 10401.8 - 66.;
+  double nebulaZ4 = 10401.8 + 66.;
+  double nebulaZ;
+
+  if(nebID <= 30)
+    nebulaZ = nebulaZ1;
+  else if(nebID <= 60)
+    nebulaZ = nebulaZ2;
+  else if(nebID <= 90)
+    nebulaZ = nebulaZ3;
+  else if(nebID <= 120)
+    nebulaZ = nebulaZ4;
+
+  double ypos = ( (nebulaZ - hpcPos[hpc_id1][2]) / (hpcPos[hpc_id2][2] - hpcPos[hpc_id1][2]) * (hpcPos[hpc_id2][1] - hpcPos[hpc_id1][1]) + hpcPos[hpc_id1][1]) ;
+
+  return ypos;
+}
+
+void chkY(int nebID = 15, int hpc_id1 = 1 , int hpc_id2 = 5)
+{
+
+  TChain *tree = new TChain("HPC","HPC");
+  tree->Add("./root/nebula003[6-8].root.HPC");
+
+  int hpcNum;
+  int* hpcID = new int[144];
+  int nebulaNum;
+  int* nebulaID = new int[144];
+  double* nebulaDTS = new double[144];
+  double* nebulaQA = new double[144];
+  double* nebulaY = new double[144];
+  double* nebulaY2 = new double[144];
+
+  tree->SetBranchAddress("nebulaNum",&nebulaNum);
+  tree->SetBranchAddress("nebulaID",nebulaID);
+  tree->SetBranchAddress("nebulaDTS",nebulaDTS);
+  tree->SetBranchAddress("nebulaQA",nebulaQA);
+  tree->SetBranchAddress("nebulaY",nebulaY);
+  tree->SetBranchAddress("nebulaY2",nebulaY2);
+
+  tree->SetBranchAddress("hpcNum",&hpcNum);
+  tree->SetBranchAddress("hpcID",hpcID);
+
+
+
+  //TH2 *h1 = new TH2D("h1","h1",120,0.5,120.5,400,-50,50);
+  TH1 *h1 = new TH1D("h1","h1",400,-100,100);
+  TH1 *h2 = new TH1D("h2","h2",400,-50,50);
+
+  for(int i=0; i<tree->GetEntries() ; i++)
+    {
+      tree->GetEntry(i);
+
+      for(int j=0 ; j<hpcNum ; j++)
+	{
+
+	  for(int k=0 ; k<hpcNum ; k++)
+	    {
+
+
+	      for(int l=0 ; l<nebulaNum ; l++)
+		{
+		  if(nebulaQA[l] > 20 && nebulaQA[l] < 40)
+		    {
+		      double ypos = GetY(nebulaID[l], hpcID[j], hpcID[k]);
+		      h1->Fill(nebulaY2[l]-ypos);
+		      //h2->Fill(nebulaDTS[l]);
+		    }
+		}
+
+
+	    }
+
+	}
+    }
+
+  TCanvas *c1 = new TCanvas("c1","c1",1200,600);
+  c1->Divide(2,1);
+  c1->cd(1);
+  h1->Draw("");
+  //c1->cd(2);
+  //h2->Draw();
+  delete [] hpcID;
+  delete [] nebulaID;
+  delete [] nebulaDTS;
+  delete [] nebulaQA;
+  delete [] nebulaY;
+  delete [] nebulaY2;
+
+
+}

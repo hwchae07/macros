@@ -1,0 +1,302 @@
+//after position calibration we can do timing correction using position information
+//using Q after pedestal calibration
+
+//function?
+//void save_hist() : make 2d histogram of tof vs Q for each ID
+
+TCutG* makeCUT(TF1 *func, double width, int pointNum, double *cutX, double *cutY)
+{
+  cutX = new double[pointNum];
+  cutY = new double[pointNum];
+  
+  for(int i=0; i<pointNum/2 ; i++)
+    {
+      cutX[i]    = 10 + i*(8000./pointNum);
+      cutY[i]    = func->Eval(cutX[i]) + width;
+
+      cutX[i+pointNum/2] = 10 + 4000 - (i+1)*(8000./pointNum);
+      double temp = 10 + 4000 - (i+1)*(8000./pointNum);
+      cutY[i+pointNum/2] = func->Eval(temp) - width;
+    }
+
+  TCutG *cut = new TCutG("cut",pointNum,cutX,cutY);
+  return cut;
+}
+
+void slew_cor(int layer=0)
+{
+  TFile *file = new TFile("./hist/NEBULA/slew_2nd_nebula.root","r");
+  
+  TChain *chain = new TChain("NEBslew","NEBslew");
+  chain->Add("./root/run014[6-9].root.NEBslew");
+  chain->Add("./root/run015[0-4].root.NEBslew");
+
+  if(layer == 0 )
+    {
+      ofstream fout1(Form("./dat/slew_2nd_nebula_up_pol1.dat",layer));
+      ofstream fout2(Form("./dat/slew_2nd_nebula_down_pol1.dat",layer));    
+    }
+  else
+    {
+      ofstream fout1(Form("./dat/slew_2nd_nebula_up_pol1_layer%d.dat",layer));
+      ofstream fout2(Form("./dat/slew_2nd_nebula_down_pol1_layer%d.dat",layer));
+    }
+  
+  TH2 *h1;
+  TH2 *h2;
+  TH2 *h3;
+
+  TH1 *h2p;
+  TH1 *h3p;
+
+  TH2 *hu;
+  TH2 *hd;
+
+  TH2 *huu;
+  TH2 *hdd;
+
+  TH2 *huuu;
+  TH2 *hddd;
+  
+  TProfile *hpu;
+  TProfile *hpd;
+
+  TProfile *hpuu;
+  TProfile *hpdd;
+
+  TProfile *hpuuu;
+  TProfile *hpddd;
+
+  TSpectrum *ts1 = new TSpectrum();
+  TSpectrum *ts2 = new TSpectrum();
+
+  TF1 *f1;
+  TF1 *f2;
+  
+  int id = 15;
+
+  TCanvas *c1 = new TCanvas("c1","c1",1200,600);
+  c1->Divide(2,1);
+  TCanvas *c2 = new TCanvas("c2","c2",1200,800);
+  c2->Divide(3,2);
+
+  c1->Print(Form("./fig/NEBULA/slew_2nd_nebula_pol1_layer%d_1.pdf[",layer));
+  c2->Print(Form("./fig/NEBULA/slew_2nd_nebula_pol1_layer%d_2.pdf[",layer));
+
+  int startID = 1;
+  int endID = 120;
+
+  if(layer==1)
+    {
+      startID=1;
+      endID=30;
+    }
+  else if(layer==2)
+    {
+      startID=31;
+      endID=60;
+    }
+  else if(layer==3)
+    {
+      startID=61;
+      endID=90;
+    }
+  else if(layer==4)
+    {
+      startID=91;
+      endID=120;
+    }  
+
+  for(id = startID; id <= endID ; id+=1)
+    {
+      cout<<"ID"<<id<< " is ongoing..."<<"\r";
+      cout.flush();
+      
+      h1 = (TH2D*)file->Get(Form("h1id%d",id));
+      h2 = (TH2D*)file->Get(Form("h2id%d",id));
+      h3 = (TH2D*)file->Get(Form("h3id%d",id));
+  
+      c1->cd(1);
+      h2p = (TH1D*)h2->ProjectionY(Form("h2p%d",id),0,4000);
+      h2p->Rebin(10);
+      ts1->Search(h2p);
+      double center1 = ts1->GetPositionX()[0];
+      h2p->Fit("gaus","rq0","goff",center1-10,center1+10);
+      f1 = (TF1*)h2p->GetFunction("gaus");
+      double urange = f1->GetParameter(1)-3.5*f1->GetParameter(2);
+      h2p->Draw();
+
+      c1->cd(2);
+      h3p = (TH1D*)h3->ProjectionY(Form("h3p%d",id),0,4000);
+      h3p->Rebin(10);
+      ts2->Search(h3p);
+      double center2 = ts2->GetPositionX()[0];
+      h3p->Fit("gaus","rq","goff",center2-10,center2+10);
+      f2 = (TF1*)h3p->GetFunction("gaus");
+      double drange = f2->GetParameter(1)-3.5*f2->GetParameter(2);
+      h3p->Draw();
+
+      
+
+      c2->cd(1);
+      chain->Draw(Form("nebulaTOFU:nebulaQPed>>hu%d(100,0,4000,500,-20,80)",id),Form("nebulaID==%d&&abs(nebulaTOFU-%lf+8)<7",id,urange),"colz");
+      hu = (TH2D*)gDirectory->Get(Form("hu%d",id));
+      hpu = (TProfile*)hu->ProfileX(Form("hpu%d",id));
+      TF1 *fitu = new TF1("fitu","[0]+[1]*TMath::Power(x,-0.5)",0,4000);
+      fitu->SetParameter(1,40);
+      fitu->SetParLimits(1,20,60);
+      hpu->Fit("fitu","rq","same",10,500);
+
+      hu->GetYaxis()->SetRangeUser(urange-20,urange+5);
+      hu->GetZaxis()->SetRangeUser(0.01,100);
+
+      
+      //TCutG* makeCUT(TF1 *func, double width, int pointNum, double *cutX, double *cutY)
+
+      double *cutXU;
+      double *cutYU;
+      TCutG* cutU = makeCUT(fitu,4,400,cutXU,cutYU);
+      cutU->SetName(Form("cutU%d",id));
+      cutU->SetVarX("nebulaQPed");
+      cutU->SetVarY("nebulaTOFU");
+      cutU->Draw("SAME");
+      
+      c2->cd(2);
+      chain->Draw(Form("nebulaTOFU:nebulaQPed>>huu%d(100,0,4000,500,-20,80)",id),Form("cutU%d&&nebulaID==%d&&abs(nebulaTOFU-%lf+8)<7",id,id,urange),"colz");
+      huu = (TH2D*)gDirectory->Get(Form("huu%d",id));
+      hpuu = (TProfile*)huu->ProfileX(Form("hpuu%d",id));
+      hpuu->Fit("fitu","q","same");
+      huu->GetYaxis()->SetRangeUser(urange-20,urange+5);
+      huu->GetZaxis()->SetRangeUser(0.01,100);
+      
+      TCutG* cutUU = makeCUT(fitu,2,400,cutXU,cutYU);
+      cutUU->SetName(Form("cutUU%d",id));
+      cutUU->SetVarX("nebulaQPed");
+      cutUU->SetVarY("nebulaTOFU");
+      cutUU->Draw("SAME");
+
+      c2->cd(3);
+      chain->Draw(Form("nebulaTOFU:nebulaQPed>>huuu%d(100,0,4000,500,-20,80)",id),Form("cutUU%d&&nebulaID==%d&&abs(nebulaTOFU-%lf+8)<7",id,id,urange),"colz");
+      huuu = (TH2D*)gDirectory->Get(Form("huuu%d",id));
+      hpuuu = (TProfile*)huuu->ProfileX(Form("hpuuu%d",id));
+      hpuuu->Fit("fitu","q","same");
+      huuu->GetYaxis()->SetRangeUser(urange-20,urange+5);
+      huuu->GetZaxis()->SetRangeUser(0.01,100);
+
+      fout1<<fitu->GetParameter(0)<<" "<<fitu->GetParameter(1)<<endl;
+
+      c2->cd(4);
+      chain->Draw(Form("nebulaTOFD:nebulaQPed>>hd%d(100,0,4000,500,-20,80)",id),Form("nebulaID==%d&&abs(nebulaTOFD-%lf+8)<7",id,drange),"colz");
+      hd = (TH2D*)gDirectory->Get(Form("hd%d",id));
+      hpd = (TProfile*)hd->ProfileX(Form("hpd%d",id));
+      TF1 *fitd = new TF1("fitd","[0]+[1]*TMath::Power(x,-0.5)",0,4000);
+      fitd->SetParameter(1,40);
+      fitd->SetParLimits(1,20,60);
+      hpd->Fit("fitd","rq","same",10,500);
+
+      hd->GetYaxis()->SetRangeUser(drange-20,drange+5);
+      hd->GetZaxis()->SetRangeUser(0.01,100);
+      
+      //TCutG* makeCUT(TF1 *func, double width, int pointNum, double *cutX, double *cutY)
+
+      double *cutXD;
+      double *cutYD;
+      TCutG* cutD = makeCUT(fitd,4,400,cutXD,cutYD);
+      cutD->SetName(Form("cutD%d",id));
+      cutD->SetVarX("nebulaQPed");
+      cutD->SetVarY("nebulaTOFD");
+      cutD->Draw("SAME");
+
+      
+      c2->cd(5);
+      chain->Draw(Form("nebulaTOFD:nebulaQPed>>hdd%d(100,0,4000,500,-20,80)",id),Form("cutD%d&&nebulaID==%d&&abs(nebulaTOFD-%lf+8)<7",id,id,drange),"colz");
+      hdd = (TH2D*)gDirectory->Get(Form("hdd%d",id));
+      hpdd = (TProfile*)hdd->ProfileX(Form("hpdd%d",id));
+      hpdd->Fit("fitd","q","same");
+      hdd->GetYaxis()->SetRangeUser(drange-20,drange+5);
+      hdd->GetZaxis()->SetRangeUser(0.01,100);
+      
+      TCutG* cutDD = makeCUT(fitd,2,400,cutXD,cutYD);
+      cutDD->SetName(Form("cutDD%d",id));
+      cutDD->SetVarX("nebulaQPed");
+      cutDD->SetVarY("nebulaTOFD");
+      cutDD->Draw("SAME");
+
+      c2->cd(6);
+      chain->Draw(Form("nebulaTOFD:nebulaQPed>>hddd%d(100,0,4000,500,-20,80)",id),Form("cutDD%d&&nebulaID==%d&&abs(nebulaTOFD-%lf+8)<7",id,id,drange),"colz");
+      hddd = (TH2D*)gDirectory->Get(Form("hddd%d",id));
+      hpddd = (TProfile*)hddd->ProfileX(Form("hpddd%d",id));
+      hpddd->Fit("fitd","q","same");
+      hddd->GetYaxis()->SetRangeUser(drange-20,drange+5);
+      hddd->GetZaxis()->SetRangeUser(0.01,100);
+
+      fout2<<fitd->GetParameter(0)<<" "<<fitd->GetParameter(1)<<endl;
+      
+      c1->Update();
+      c2->Update();
+      
+      c1->Print(Form("./fig/NEBULA/slew_2nd_nebula_pol1_layer%d_1.pdf",layer));
+      c2->Print(Form("./fig/NEBULA/slew_2nd_nebula_pol1_layer%d_2.pdf",layer));
+
+    }
+  
+  c1->Print(Form("./fig/NEBULA/slew_2nd_nebula_pol1_layer%d_1.pdf]",layer));
+  c2->Print(Form("./fig/NEBULA/slew_2nd_nebula_pol1_layer%d_2.pdf]",layer));
+  fout1.close();
+  fout2.close();
+}
+
+
+
+
+
+
+void save_hist()
+{
+  TFile *file = new TFile("./hist/NEBULA/slew_2nd_nebula.root","recreate");
+
+  TChain *chain = new TChain("NEBslew","NEBslew");
+  chain->Add("./root/run014[6-9].root.NEBslew");
+  chain->Add("./root/run015[0-4].root.NEBslew");
+  
+  int nebulaNum;
+  int* nebulaID = new int[144];
+  double* nebulaTOF = new double[144];
+  double* nebulaTOFU = new double[144];
+  double* nebulaTOFD = new double[144];
+  double* nebulaQPed = new double[144];
+
+  chain->SetBranchAddress("nebulaNum",&nebulaNum);
+  chain->SetBranchAddress("nebulaID",nebulaID);
+  chain->SetBranchAddress("nebulaTOF",nebulaTOF);
+  chain->SetBranchAddress("nebulaTOFU",nebulaTOFU);
+  chain->SetBranchAddress("nebulaTOFD",nebulaTOFD);
+  chain->SetBranchAddress("nebulaQPed",nebulaQPed);
+
+  TH2 *h1;
+  TH2 *h2;
+  TH2 *h3;
+
+  int id = 15;
+  for(id = 1 ; id <= 120 ; id++)
+    {
+      cout<<"ID"<<id<<" is ongoing..."<<"\r";
+      cout.flush();
+      
+      chain->Draw(Form("nebulaTOF:nebulaQPed>>h1id%d(4000,0,4000,500,-20,80)",id),Form("nebulaID==%d",id),"goff");
+      chain->Draw(Form("nebulaTOFU:nebulaQPed>>h2id%d(4000,0,4000,500,-20,80)",id),Form("nebulaID==%d",id),"goff");
+      chain->Draw(Form("nebulaTOFD:nebulaQPed>>h3id%d(4000,0,4000,500,-20,80)",id),Form("nebulaID==%d",id),"goff");
+
+      h1 = (TH2D*)gDirectory->Get(Form("h1id%d",id));
+      h2 = (TH2D*)gDirectory->Get(Form("h2id%d",id));
+      h3 = (TH2D*)gDirectory->Get(Form("h3id%d",id));
+
+      h1->Write();
+      h2->Write();
+      h3->Write();
+
+
+
+    }
+  file->Close();
+}

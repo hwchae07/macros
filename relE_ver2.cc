@@ -1,0 +1,59 @@
+{
+  TFile *fcut = new TFile("./cut/beamCut.root","r");
+  TCutG *b32na = (TCutG*)fcut->Get("b32na");
+  TCutG *b33na = (TCutG*)fcut->Get("b33na");
+  TCutG *b34na = (TCutG*)fcut->Get("b34na");
+  TCutG *b30ne = (TCutG*)fcut->Get("b30ne");
+  TCutG *b31ne = (TCutG*)fcut->Get("b31ne");
+  TCutG *b32ne = (TCutG*)fcut->Get("b32ne");
+  TCutG *b29f = (TCutG*)fcut->Get("b29f");
+  fcut->Close();
+
+  
+  TChain *chain = new TChain("RelE","RelE");
+  //chain->Add("./root/run0275.root.RelE");
+  chain->Add("./root/run027[5-9].root.RelE");
+  chain->Add("./root/run028[0-9].root.RelE");
+  chain->Add("./root/run029[0-4].root.RelE");
+
+
+  chain->SetAlias("trig_neut","coinTrigger==3||coinTrigger==5||coinTrigger==7");
+
+  TCut cut_f32ne = "abs(fragAoZ-3.34)<0.06&&abs(fragZ-3.95)<0.15";
+  Double_t f32ne_x[9] = {3.32112,3.27802,3.26455,3.3292,3.35614,3.39116,3.40194,3.35075,3.32112};
+  Double_t f32ne_y[9] = {4.04911,4.01403,3.90242,3.84503,3.83227,3.89286,4.00446,4.05548,4.04911};
+
+  TCutG *f32ne = new TCutG("f32ne",9,f32ne_x,f32ne_y);
+  f32ne->SetVarX("fragAoZ");
+  f32ne->SetVarY("fragZ");
+  
+  //chain->Draw("fragZ:fragAoZ>>h2(400,2.0,3.5,400,3.5,5.0)","b34na&&trig_neut"&&cut_f32ne,"colz");
+
+  TCanvas *c1 = new TCanvas("c1","c1",1500,1000);
+  c1->Divide(3,3);
+
+  TH1 *h1;
+  
+  for(int i=0;i<=8;i++)
+    {
+      c1->cd(i+1);
+      chain->Draw(Form("relE>>h%d(25,0,5)",i+1),Form("b34na&&trig_neut&&f32ne&&neutQ>%d",i));
+      h1 = (TH1D*)gDirectory->Get(Form("h%d",i+1));
+      h1->SetTitle(Form("E_{rel} with %d MeVee threshold;E_{rel} (MeV)",i));
+    }
+
+  chain->Scan("relE:neutQ","b34na&&trig_neut"&&cut_f32ne);
+  
+  
+  //h1->SetTitle("E_{rel} for ^{32}Ne + n;E_{rel} (MeV)");
+
+  /*
+    TCanvas *c2 = new TCanvas("c2","c2",1600,600);
+    c2->Divide(2,1);
+    c2->cd(1);
+    chain->Draw("relE>>h3(25,0,5)","b34na&&trig_neut&&f32ne&&neutIsNEB==1");
+    c2->cd(2);
+    chain->Draw("relE>>h4(25,0,5)","b34na&&trig_neut&&f32ne&&neutIsNEB==0");
+  */
+  
+}
