@@ -22,6 +22,7 @@
 #include "AnaFragPID.H"
 #include "AnaRelE.H"
 #include "AnaNEBslew.H"
+#include "AnaHPC.H"
 
 #include "TArtStoreManager.hh"
 #include "TArtEventStore.hh"
@@ -48,14 +49,15 @@ int main(int argc, char** argv){
   if (argc >= 3) nMaxEvent = atoi(argv[2]);
 
   // Load Modules
-  AnaModule* modules[10] = { new AnaCoin(), new AnaBeamPla(), new AnaBDC(), new AnaHOD(), new AnaFDC(), new AnaNeut(), new AnaNEBULA(), new AnaNeuLAND(), new AnaCATANA(), new AnaPPAC() };
+  AnaModule* modules[11] = { new AnaCoin(), new AnaBeamPla(), new AnaBDC(), new AnaHOD(), new AnaFDC(), new AnaNeut(), new AnaNEBULA(), new AnaNeuLAND(), new AnaCATANA(), new AnaPPAC(), new AnaHPC() };
   Int_t whichModule = SelectModule();
   if (!whichModule) return 0;
 
-  if (whichModule == 11) { // for AnaBrho
+  /*
+    if (whichModule == 11) { // for AnaBrho
     AnaBrho(atoi(argv[1]));
     return 0;}
-
+  */
   if (whichModule == 12)
     {
       AnaSAMURAI(atoi(argv[1]));
@@ -92,7 +94,6 @@ int main(int argc, char** argv){
   fStoreManager = TArtStoreManager::Instance();
 
   AnaModule* fAnaModule;
-  
   fAnaModule = modules[whichModule-1];
   fAnaModule->InitParameter();
   fAnaModule->InitDetector();
@@ -135,13 +136,16 @@ int main(int argc, char** argv){
   cout << " ============================================= " << endl;
   cout << "              < Tree information > " << endl;
   fAnaModule->GetTree()->Print();
+  cout << " ============================================= " << endl;
+  cout << "               <Tree print done>               " <<endl;
   fAnaModule->GetTree()->Write();
+  cout << "               <Tree write done>               " <<endl;
+  cout << " ============================================= " << endl;
   rootFile->Close();
   delete rootFile;
 
-  delete fAnaModule;
+  //delete fAnaModule;
   delete fStoreManager;
-
   return 0;
 }
 
@@ -173,7 +177,8 @@ int SelectModule(){
   cout << "   8. NeuLAND" << endl;
   cout << "   9. CATANA" << endl;
   cout << "   10. PPAC" << endl;
-  cout << "   11. Brho" << endl;
+  cout << "   11. NEBULA with HPC" <<endl;
+  //  cout << "   11. Brho" << endl;
   cout << "   12. Brho (by Chae)" <<endl;
   cout << "   13. BeamPID" << endl;
   cout << "   14. FragPID" << endl;

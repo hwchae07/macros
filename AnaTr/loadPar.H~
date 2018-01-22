@@ -1,2 +1,0 @@
-void loadParU(int order=6);
-void loadParD(int order=6);

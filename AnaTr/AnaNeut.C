@@ -112,6 +112,7 @@ void AnaNeut::Analysis(){
 	continue;
       neutQU[neutNum] = pla->GetQUCal();
       neutQD[neutNum] = pla->GetQDCal();
+
       neutTU[neutNum] = pla->GetTUSlw() - tofOffsetNEB[neutID[neutNum]-1];
       neutTD[neutNum] = pla->GetTDSlw() - tofOffsetNEB[neutID[neutNum]-1];
       //      neutTA[neutNum] = pla->GetTAveSlw();// - tofOffsetNEB[neutID[neutNum]-1];
@@ -200,4 +201,5 @@ void AnaNeut::SetTree(){
   tree->Branch("neutZ",neutZ,"neutZ[neutNum]/D");
   tree->Branch("neutNEB",neutNEB,"neutNEB[neutNum]/O");
   tree->Branch("neutVETO",neutVETO,"neutVETO[neutNum]/O");
+
 }
